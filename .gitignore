@@ -1,0 +1,38 @@
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Claude Code
+.claude/
+
+# Build
+build/
+target/
+*.class
+*.jar
+
+# Gradle
+.gradle/
+gradle-wrapper.jar
+
+# Node
+node_modules/
+.next/
+dist/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temp
+*.tmp
