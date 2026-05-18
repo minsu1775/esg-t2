@@ -1,6 +1,6 @@
 ---
 name: scheduler
-description: '@Scheduled zone=Asia/Seoul 필수, @ConditionalOnProperty 테스트 격리, Outbox Poller 규칙'
+description: 'cron 스케줄러 zone=Asia/Seoul 필수 (fixedDelay/fixedRate 불가), @ConditionalOnProperty 테스트 격리, Outbox Poller 규칙'
 paths:
   - "**/*Scheduler*.java"
   - "**/*Job*.java"
@@ -13,8 +13,10 @@ paths:
 
 ## zone = "Asia/Seoul" 필수 (esg-t1 BUG-P4-12)
 
-`@Scheduled`에 시간대 미지정 시 JVM 기본 시간대(UTC)로 동작 → KST와 9시간 차이 발생.
-**반드시 `zone = "Asia/Seoul"` 명시.**
+`cron` 기반 `@Scheduled`에 시간대 미지정 시 JVM 기본 시간대(UTC)로 동작 → KST와 9시간 차이 발생.
+**`cron` 속성 사용 시 반드시 `zone = "Asia/Seoul"` 명시.**
+
+> ⚠️ `zone` 속성은 `cron` 에서만 유효. `fixedDelay`/`fixedRate`에 `zone` 사용 시 컴파일 오류 또는 무시. fixedDelay/fixedRate는 실행 간격이 절대 시각이 아닌 상대 시간이므로 시간대 설정 불필요.
 
 ```java
 // ❌ 금지 — 시간대 미지정
@@ -61,7 +63,7 @@ scheduler:
 @ConditionalOnProperty(name = "scheduler.enabled", havingValue = "true")
 public class OutboxPoller {
 
-    @Scheduled(fixedDelay = 5000, zone = "Asia/Seoul")
+    @Scheduled(fixedDelay = 5000)   // fixedDelay는 zone 속성 미지원
     @Transactional
     public void poll() {
         outboxRepository.findPending(BATCH_SIZE).forEach(event -> {

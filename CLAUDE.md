@@ -3,7 +3,7 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 > **선행 프로젝트**: `../esg-t1` — MVP Phase 0~12 완성본. esg-t2는 esg-t1의 아키텍처 교훈과 규제 업데이트(KSSB 1/2, 2026-02-26)를 반영한 2세대 프로젝트다.  
-> **문서 읽는 순서**: `docs/regulatory.md` → `docs/prd.md` → `docs/spec.md` → `docs/plan.md` → `docs/task.md` → 본 파일
+> **문서 읽는 순서**: `docs/regulatory.md` → `docs/prd.md` → `docs/spec.md` → `docs/plan.md` → `docs/task.md` → `docs/superpowers/plans/` → 본 파일
 
 ---
 
@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ESG 공시지원 시스템 2세대. KSSB 1/2(한국판 IFRS S1/S2), Scope 3, 다법인 연결, 외부 검증 모드를 MVP에 포함한 엔터프라이즈 공시 플랫폼.
 
 - **Group**: `ai.claudecode` | **Artifact**: `esgt2` | **Base package**: `ai.claudecode.esgt2`
-- **초기 생성**: Spring Initializr (https://start.spring.io) 필수. 수동 `build.gradle.kts` 작성 금지.
+- **초기 생성**: Spring Initializr (https://start.spring.io)으로 Gradle Wrapper(`gradlew`, `gradlew.bat`, `gradle/wrapper/`)만 생성. `build.gradle.kts`는 impl plan의 코드로 교체. Initializr 생성물을 그대로 쓰지 말 것.
 
 ---
 
@@ -90,7 +90,7 @@ ai.claudecode.esgt2
 | `08-persistence.md` | Flyway 멀티 로케이션, Append-only Repository, N+1 방지 | `**/infra/**` |
 | `09-scheduler.md` | zone=Asia/Seoul, @ConditionalOnProperty 격리 | `**/*Scheduler*.java` |
 | `10-evidence-files.md` | DigestInputStream, 경로 순회 방어, SHA-256 | `**/evidence/**` |
-| `11-modulith-events.md` | 모듈 경계, @Auditable 적용 범위, @ApplicationModuleListener | `**/module/**` |
+| `11-modulith-events.md` | 모듈 경계, @Auditable 적용 범위, @ApplicationModuleListener | `**/ghg/**`, `**/entity/**`, `**/audit/**`, `**/vw/**`, `**/rpt/**`, `**/supply/**` |
 
 ---
 

@@ -96,10 +96,10 @@ _PR 생성 시 추가 예정_
 
 | Phase | 중점 리뷰 항목 |
 |---|---|
-| Phase 0 | 모듈 패키지 구조, CI 파이프라인 정확성 |
-| Phase 1 | Domain≠Entity 원칙, RLS 정책 적용 |
-| Phase 2 | @Auditable AOP 커버리지, Hash Chain PESSIMISTIC_WRITE |
-| Phase 3 | YAML 로더 멱등성, 배출계수 계산 수식 정확도 |
+| Phase 0 | 모듈 패키지 구조 (중간 `module/` 디렉터리 없음), CI 파이프라인 정확성, Flyway 체크섬 불변 확인 |
+| Phase 1 | Domain≠Entity 원칙, RLS 정책 적용, TenantContextInterceptor `SET LOCAL` 검증, 크로스 테넌트 이중 방어 |
+| Phase 2 | @Auditable AOP 커버리지, Hash Chain PESSIMISTIC_WRITE, Canonical JSON 단일 직렬화 경로 |
+| Phase 3 | YAML 로더 멱등성, 배출계수 계산 `BigDecimal` 전용(float/double 금지), `reporting_year` SQL 예약어 방지, `factorAt` 재현성 테스트 |
 | Phase 4 | 연결 집계 이중 계상 제거 알고리즘 |
 | Phase 5 | Scope 3 95% 임계값 계산 로직, 데이터 품질 점수 |
 | Phase 6 | 공급업체 데이터 격리, Webhook 시그니처 검증 |

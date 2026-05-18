@@ -132,7 +132,7 @@ public static Map<String, Object> canonicalPayload(AuditEvent event) {
 outboxRepository.save(OutboxEvent.of(tenantId, "EMISSION_CALCULATED", payload));
 
 // Outbox Poller (별도 스케줄러)
-@Scheduled(fixedDelay = 5000, zone = "Asia/Seoul")
+@Scheduled(fixedDelay = 5000)   // fixedDelay는 zone 속성 미지원 — cron에만 zone 유효
 @ConditionalOnProperty(name = "scheduler.enabled", havingValue = "true")
 public void poll() {
     outboxRepository.findPending().forEach(event -> {

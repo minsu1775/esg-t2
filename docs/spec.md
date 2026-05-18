@@ -2,8 +2,8 @@
 
 > **버전**: 1.0  
 > **작성일**: 2026-05-18  
-> **레퍼런스**: prd.md v1.0, esg-t1/docs/spec.md v0.1, CLAUDE.md  
-> **기술 스택**: Spring Boot 4.0.x / Java 25 / Next.js 15 / PostgreSQL 17
+> **레퍼런스**: prd.md v1.0, esg-t1/docs/spec.md v0.1, CLAUDE.md, docs/superpowers/plans/2026-05-18-esg-t2-implementation.md  
+> **기술 스택**: Spring Boot 4.0.x / Java 25 / Next.js 15 / PostgreSQL 18
 
 ---
 
@@ -15,11 +15,11 @@
 |---|---|---|
 | Java | 25 LTS | Virtual Threads (Project Loom), JSpecify null-safety |
 | Spring Boot | 4.0.x | Java 25 first-class 지원, OpenTelemetry 내장, GraalVM native |
-| Spring Modulith | 1.3.x | `@ApplicationModule` 컴파일 타임 경계 강제 |
-| Spring Security | 6.4.x | JWT + RBAC |
-| Spring Data JPA | 3.4.x | PostgreSQL 17 연동, Auditing |
-| Flyway | 10.x | DB 마이그레이션 |
-| Testcontainers | 1.20.x | 통합 테스트용 PostgreSQL |
+| Spring Modulith | 2.0.x | `@ApplicationModule` 컴파일 타임 경계 강제 (Spring Boot 4.0 BOM) |
+| Spring Security | 7.x | JWT + RBAC (Spring Framework 7 기반) |
+| Spring Data JPA | 4.x | PostgreSQL 18 연동, Auditing (Spring Framework 7 기반) |
+| Flyway | 11.x | DB 마이그레이션 |
+| Testcontainers | 1.21.x | 통합 테스트용 PostgreSQL |
 | Gradle | 8.12+ | Kotlin DSL 빌드 스크립트 |
 
 ### 1.2 프론트엔드
@@ -38,7 +38,7 @@
 
 | 구성요소 | 목적 |
 |---|---|
-| PostgreSQL 17 | Primary DB (Row-Level Security) |
+| PostgreSQL 18 | Primary DB (Row-Level Security) |
 | Redis | JWT 블랙리스트, 캐시 |
 | OpenTelemetry (OTLP) | 분산 트레이싱 (Spring Boot 4 내장) |
 | Prometheus + Grafana | 메트릭 수집·시각화 |
@@ -122,31 +122,35 @@ EmissionRecordJpaEntity entity = EmissionRecordJpaEntity.builder()...build(); //
 #### tenants (테넌트)
 ```sql
 CREATE TABLE tenants (
-    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name        VARCHAR(200) NOT NULL,
-    plan_type   VARCHAR(50)  NOT NULL DEFAULT 'ENTERPRISE',
-    created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    code         VARCHAR(50) NOT NULL UNIQUE,  -- 테넌트 식별 코드 (예: SAMSUNG, DEMO)
+    name         VARCHAR(200) NOT NULL,
+    country_code CHAR(2)     NOT NULL,         -- 본사 소재 국가 (ISO 3166-1)
+    plan_type    VARCHAR(50) NOT NULL DEFAULT 'ENTERPRISE',
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at   TIMESTAMPTZ
 );
 ```
 
 #### legal_entities (법인)
 ```sql
 CREATE TABLE legal_entities (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id       UUID NOT NULL REFERENCES tenants(id),
-    name            VARCHAR(200) NOT NULL,
-    country_code    CHAR(2) NOT NULL,
-    reporting_year  INT NOT NULL,
-    consolidation_method VARCHAR(30) NOT NULL, -- EQUITY, OPERATIONAL_CONTROL
-    is_parent       BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id    UUID        NOT NULL REFERENCES tenants(id),
+    name         VARCHAR(200) NOT NULL,
+    country_code CHAR(2)     NOT NULL,
+    entity_type  VARCHAR(30) NOT NULL,  -- PARENT, SUBSIDIARY, ASSOCIATE
+    is_active    BOOLEAN     NOT NULL DEFAULT TRUE,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at   TIMESTAMPTZ,
+    UNIQUE(tenant_id, name)
 );
 
--- RLS 정책
-ALTER TABLE legal_entities ENABLE ROW LEVEL SECURITY;
-CREATE POLICY tenant_isolation ON legal_entities
-    USING (tenant_id = current_setting('app.current_tenant_id')::UUID);
+-- RLS 정책은 db/migration-pg/ 에 위치 (PostgreSQL 전용 DDL 분리 원칙)
+-- db/migration-pg/V3__rls_policies.sql:
+--   ALTER TABLE legal_entities ENABLE ROW LEVEL SECURITY;
+--   CREATE POLICY tenant_isolation ON legal_entities
+--       USING (tenant_id = current_setting('app.current_tenant_id')::UUID);
 ```
 
 #### entity_relationships (법인 간 관계)
@@ -212,12 +216,12 @@ CREATE TABLE emission_factors (
     category        VARCHAR(100) NOT NULL,
     sub_category    VARCHAR(100),
     country_code    CHAR(2),
-    year            INT NOT NULL,
+    reporting_year  INT NOT NULL,         -- 'year' 예약어 사용 금지 → reporting_year
     gwp_source      VARCHAR(30) NOT NULL DEFAULT 'IPCC_AR6', -- GWP 기준
     factor_value    NUMERIC(20, 8) NOT NULL,
     unit            VARCHAR(50) NOT NULL,
     is_active       BOOLEAN NOT NULL DEFAULT TRUE,
-    UNIQUE (source, category, sub_category, country_code, year)
+    UNIQUE (source, category, sub_category, country_code, reporting_year)
 );
 ```
 
@@ -265,16 +269,22 @@ CREATE TABLE verification_snapshots (
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     frozen_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
--- 스냅샷은 업데이트 금지 트리거
-CREATE RULE no_update_snapshot AS ON UPDATE TO verification_snapshots DO INSTEAD NOTHING;
 ```
+
+스냅샷 불변성 보장 전략 (2중 방어):
+1. **DB 권한 박탈** (`db/migration-pg/` 에 위치 — PostgreSQL 전용):
+   ```sql
+   REVOKE UPDATE, DELETE ON verification_snapshots FROM app_user;
+   ```
+2. **도메인 레벨**: `VerificationSnapshot.create()` 팩토리만 허용, 변경 메서드 미노출
+
+> ⚠️ `CREATE RULE ... DO INSTEAD NOTHING` 방식은 PostgreSQL 레거시 기능으로 오류를 던지지 않아 조용히 무시됨. 사용 금지.
 
 #### audit_logs (감사 이력 — Hash Chain)
 ```sql
 CREATE TABLE audit_logs (
     id              BIGSERIAL PRIMARY KEY,
-    tenant_id       UUID NOT NULL,
+    tenant_id       UUID,         -- NULL 허용: 시스템 레벨 이벤트(테넌트 생성, 스케줄러 등)
     event_type      VARCHAR(100) NOT NULL,
     entity_type     VARCHAR(100) NOT NULL,
     entity_id       VARCHAR(100) NOT NULL,
@@ -666,16 +676,60 @@ PDF 보고서에는 수치 셀에 `evidence://{activity_data_id}` 내부 링크 
 
 ### 6.2 Row-Level Security (PostgreSQL RLS)
 
-모든 핵심 테이블에 적용:
-```sql
--- 애플리케이션에서 세션 변수 설정
-SET LOCAL app.current_tenant_id = '...';
+#### TenantContextInterceptor — 세션 변수 설정 (구현 필수)
 
--- RLS 정책 예시
+매 요청마다 JWT에서 tenant_id를 추출해 PostgreSQL 세션 변수에 설정한다.
+
+```java
+// TenantContextInterceptor.java (Phase 1 구현)
+@Component
+public class TenantContextInterceptor implements HandlerInterceptor {
+
+    @Autowired
+    private DataSource dataSource;
+
+    @Override
+    public boolean preHandle(HttpServletRequest req, HttpServletResponse res, Object h) {
+        String tenantId = SecurityContextHolder.getContext()
+            .getAuthentication()./* JWT claim */.getTenantId();
+        try (Connection conn = dataSource.getConnection()) {
+            conn.createStatement().execute(
+                "SET LOCAL app.current_tenant_id = '" + tenantId + "'");
+        }
+        return true;
+    }
+}
+```
+
+> ⚠️ 세션 변수 미설정 시 RLS가 동작하지 않아 전체 테이블 접근 가능. 반드시 인터셉터 등록 확인.
+
+#### RLS 정책 (모든 핵심 테이블 적용)
+
+```sql
+-- 모든 핵심 테이블에 동일 패턴 적용
 CREATE POLICY tenant_isolation ON emission_records
     FOR ALL TO app_user
     USING (tenant_id = current_setting('app.current_tenant_id')::UUID);
 ```
+
+#### VERIFIER 전용 RLS 설계
+
+VERIFIER는 테넌트 내에서도 지정된 snapshot_id 외 접근 불가. 두 세션 변수를 조합:
+
+```sql
+-- VERIFIER용 추가 정책
+CREATE POLICY verifier_snapshot_isolation ON verification_snapshots
+    FOR SELECT TO app_user
+    USING (
+        -- 일반 사용자: 테넌트 격리만
+        current_setting('app.verifier_snapshot_id', true) IS NULL
+        OR
+        -- VERIFIER: 지정 스냅샷만
+        id = current_setting('app.verifier_snapshot_id', true)::UUID
+    );
+```
+
+VERIFIER 로그인 시 JWT claim에 `verifier_snapshot_id`를 포함하여 `TenantContextInterceptor`에서 `SET LOCAL app.verifier_snapshot_id = '...'` 추가 설정.
 
 ---
 

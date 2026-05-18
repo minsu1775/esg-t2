@@ -154,7 +154,7 @@
 
 **현상 2 (BUG-P4-04)**: Testcontainers 통합 테스트 중 스케줄러가 활성화되어 테스트 데이터 위에서 실제 스케줄 작업이 실행됐다. 테스트 결과가 비결정적으로 되었다.
 
-**교훈**: `@Scheduled`에는 반드시 `zone = "Asia/Seoul"`을 명시. 스케줄러 빈에는 `@ConditionalOnProperty(name = "scheduler.enabled", havingValue = "true")`를 적용하고 `application-test.yml`에 `scheduler.enabled: false`를 설정한다.
+**교훈**: `@Scheduled(cron = "...")` 사용 시 반드시 `zone = "Asia/Seoul"`을 명시. `fixedDelay`/`fixedRate`는 절대 시각이 아닌 상대 간격이므로 `zone` 미적용 (`zone` 속성이 없음 — 붙이면 컴파일 오류). 스케줄러 빈에는 `@ConditionalOnProperty(name = "scheduler.enabled", havingValue = "true")`를 적용하고 `application-test.yml`에 `scheduler.enabled: false`를 설정한다.
 
 **esg-t2 적용**: CLAUDE.md 섹션 14에 양쪽 규칙 모두 명시.
 

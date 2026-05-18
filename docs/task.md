@@ -11,10 +11,10 @@
 
 | ID | 태스크 | 상태 | 담당 | 비고 |
 |---|---|---|---|---|
-| T-0-01 | Gradle Multi-Module 프로젝트 생성 (backend/, frontend/) | TODO | | build.gradle.kts, settings.gradle.kts |
+| T-0-01 | Spring Boot 4 + Java 25 Gradle 프로젝트 생성 (루트+frontend/) | TODO | | Spring Initializr로 wrapper 생성 후 build.gradle.kts 교체 |
 | T-0-02 | Spring Boot 4.0.x + Java 25 설정 | TODO | | build.gradle.kts 의존성 |
 | T-0-03 | Spring Modulith 의존성 + 모듈 패키지 뼈대 생성 | TODO | | ghg, entity, vw, rpt, supply, audit, shared |
-| T-0-04 | PostgreSQL 17 Docker Compose 설정 | TODO | | docker-compose.yml |
+| T-0-04 | PostgreSQL 18 Docker Compose 설정 | TODO | | docker-compose.yml |
 | T-0-05 | Redis Docker Compose 설정 | TODO | | JWT 블랙리스트·캐시 |
 | T-0-06 | Flyway 설정 + V1__initial_schema.sql | TODO | | tenants, disclosure_schedules |
 | T-0-07 | AbstractIntegrationTest (Testcontainers PostgreSQL) | TODO | | 모든 통합 테스트의 부모 클래스 |
@@ -36,8 +36,8 @@
 
 | ID | 태스크 | 상태 | 비고 |
 |---|---|---|---|
-| T-1-01 | V2__entity_tables.sql — legal_entities, entity_relationships | TODO | RLS 정책 포함 |
-| T-1-02 | V3__auth_tables.sql — users, user_roles | TODO | |
+| T-1-01 | V3__entity_tables.sql — legal_entities, entity_relationships | TODO | RLS 정책 포함 (V2는 seed data) |
+| T-1-02 | V4__auth_tables.sql — users, user_roles | TODO | |
 
 ### 도메인
 
@@ -65,6 +65,7 @@
 | T-1-17 | **[예방]** `test:` `AccessDeniedException` → 403 응답 확인 (미처리 시 500) | TODO | esg-t1 L-0-10 교훈 |
 | T-1-18 | **[예방]** `test:` `ObjectOptimisticLockingFailureException` → 409 응답 확인 | TODO | |
 | T-1-19 | **[예방]** `test:` ERROR severity 검증 실패 → `create()` 차단 확인 (검증 우선 원칙) | TODO | esg-t1 BUG-P3-04 교훈 |
+| T-1-20 | **[필수]** `feat:` TenantContextInterceptor — 요청마다 `SET LOCAL app.current_tenant_id` | TODO | RLS 동작 전제 조건; 없으면 RLS 정책 무효 |
 
 ---
 
@@ -74,7 +75,7 @@
 
 | ID | 태스크 | 상태 | 비고 |
 |---|---|---|---|
-| T-2-01 | V4__audit_tables.sql — audit_logs, outbox_events | TODO | BIGSERIAL PK, Hash Chain 컬럼 |
+| T-2-01 | V5__audit_tables.sql — audit_logs, outbox_events | TODO | BIGSERIAL PK, Hash Chain 컬럼 |
 | T-2-02 | `@Auditable` 어노테이션 정의 | TODO | shared 패키지 |
 | T-2-03 | `test:` @Auditable 메서드 실행 → AuditLog 자동 기록 | TODO | |
 | T-2-04 | `feat:` AuditAspect (Around advice) | TODO | Before/After 상태 캡처 |
@@ -102,7 +103,7 @@
 
 | ID | 태스크 | 상태 | 비고 |
 |---|---|---|---|
-| T-3-01 | V5__emission_factor_tables.sql | TODO | emission_factors, factor_versions |
+| T-3-01 | V6__emission_factor_tables.sql | TODO | emission_factors, factor_versions |
 | T-3-02 | YAML 포맷 정의 — keei-2025.yaml 샘플 | TODO | 환경부 국가계수 |
 | T-3-03 | YAML 포맷 정의 — defra-2025.yaml 샘플 | TODO | DEFRA 글로벌 계수 |
 | T-3-04 | `test:` 동일 파일 2회 로드 시 중복 없음 (멱등성) | TODO | item-level upsert |
@@ -113,7 +114,7 @@
 
 | ID | 태스크 | 상태 | 비고 |
 |---|---|---|---|
-| T-3-07 | V6__activity_emission_tables.sql | TODO | activity_data, emission_records |
+| T-3-07 | V7__activity_emission_tables.sql | TODO | activity_data, emission_records |
 | T-3-08 | `test:` Scope 1 연료 연소 계산 (경유 1톤 → CO2e) | TODO | |
 | T-3-09 | `test:` Scope 2 location-based 전력 소비 계산 | TODO | |
 | T-3-10 | `test:` Scope 2 market-based (RE 인증서 적용) | TODO | |
@@ -136,7 +137,7 @@
 
 | ID | 태스크 | 상태 | 비고 |
 |---|---|---|---|
-| T-3B-01 | V11__evidence_indicator_tables.sql | TODO | evidence_files, activity_data_evidence, esg_indicators, unit_conversions |
+| T-3B-01 | V8__evidence_tables.sql + V9__indicator_tables.sql | TODO | V8: evidence_files, activity_data_evidence / V9: esg_indicators, unit_conversions |
 | T-3B-02 | `ObjectStorageGateway` 인터페이스 정의 | TODO | MinIO 개발 구현체 |
 | T-3B-03 | `test:` 파일 업로드 → SHA-256 검증 → 다운로드 테스트 | TODO | |
 | T-3B-04 | `feat:` 파일 업로드 API (POST /api/v1/evidence) | TODO | DigestInputStream 단일 I/O |
@@ -173,7 +174,7 @@
 
 | ID | 태스크 | 상태 | 비고 |
 |---|---|---|---|
-| T-4-01 | V7__consolidated_tables.sql | TODO | |
+| T-4-01 | V10__consolidated_tables.sql | TODO | |
 | T-4-02 | `test:` 3법인 Equity Method 연결 계산 정확도 | TODO | |
 | T-4-03 | `test:` 순환 지분 구조 탐지 → 예외 | TODO | |
 | T-4-04 | `test:` 이중 계상 제거 (A→B→C 체인) | TODO | |
@@ -213,7 +214,7 @@
 
 | ID | 태스크 | 상태 | 비고 |
 |---|---|---|---|
-| T-5-08 | V8__scope3_tables.sql | TODO | scope3_coverage_reports |
+| T-5-08 | V11__scope3_tables.sql | TODO | scope3_coverage_reports |
 | T-5-09 | `test:` 95% 임계값 판단 정확도 | TODO | |
 | T-5-10 | `feat:` Scope3CoverageCalculator | TODO | |
 | T-5-11 | `feat:` GET /api/v1/ghg/scope3-coverage-report | TODO | |
@@ -263,7 +264,7 @@
 
 | ID | 태스크 | 상태 | 비고 |
 |---|---|---|---|
-| T-7-01 | V9__report_tables.sql | TODO | disclosure_reports |
+| T-7-01 | V12__report_tables.sql | TODO | disclosure_reports |
 | T-7-02 | `test:` Scope 1·2·3 합산 수치 정확도 | TODO | |
 | T-7-03 | `test:` YoY 비교 (전년 데이터 없을 경우 N/A) | TODO | |
 | T-7-04 | `test:` DRAFT 보고서 → 스냅샷 생성 불가 | TODO | |
@@ -283,7 +284,7 @@
 
 | ID | 태스크 | 상태 | 비고 |
 |---|---|---|---|
-| T-8-01 | V10__verification_tables.sql | TODO | verification_snapshots, verification_comments |
+| T-8-01 | V13__verification_tables.sql | TODO | verification_snapshots, verification_comments |
 | T-8-02 | PostgreSQL 트리거: 스냅샷 UPDATE/DELETE 차단 | TODO | |
 | T-8-03 | `test:` 스냅샷 생성 후 원본 수정 → 스냅샷 불변 확인 | TODO | |
 | T-8-04 | `test:` VERIFIER → 지정 스냅샷 외 접근 → 403 | TODO | |

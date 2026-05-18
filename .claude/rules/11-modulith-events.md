@@ -2,7 +2,12 @@
 name: modulith-events
 description: Spring Modulith 모듈 경계, ApplicationEventPublisher, @Auditable AOP 적용 범위
 paths:
-  - "src/main/java/**/module/**"
+  - "src/main/java/**/ghg/**"
+  - "src/main/java/**/entity/**"
+  - "src/main/java/**/audit/**"
+  - "src/main/java/**/vw/**"
+  - "src/main/java/**/rpt/**"
+  - "src/main/java/**/supply/**"
   - "src/main/java/**/shared/**"
   - "**/*Event.java"
   - "**/*EventHandler*.java"

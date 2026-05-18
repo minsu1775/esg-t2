@@ -45,12 +45,12 @@ Phase 12: 통합 검증 & 성능 최적화 & 보안 감사
 
 ### 작업 목록
 
-- [ ] Gradle Multi-Module 프로젝트 생성 (`backend/`, `frontend/`)
+- [ ] Spring Boot 4 + Java 25 Gradle 프로젝트 생성 (루트 + `frontend/` 서브 프로젝트)
 - [ ] Spring Boot 4.0.x + Java 25 기본 설정
 - [ ] Spring Modulith 의존성 추가 + 모듈 패키지 생성 (ghg, entity, vw, rpt, supply, audit, shared)
-- [ ] PostgreSQL 17 Docker Compose 설정
+- [ ] PostgreSQL 18 Docker Compose 설정
 - [ ] Redis Docker Compose 설정
-- [ ] Flyway 설정 + V1__initial_schema.sql (tenants, legal_entities, disclosure_schedules 테이블)
+- [ ] Flyway 설정 + V1__initial_schema.sql (tenants + disclosure_schedules), V2__disclosure_schedule_seed.sql (초기 일정 데이터)
 - [ ] Testcontainers 기반 통합 테스트 설정 (`AbstractIntegrationTest`)
 - [ ] `ModularityTest` 초기 설정 (모듈 경계 검증 자동화)
 - [ ] GitHub Actions CI 파이프라인 (test → modularity-check → build)
@@ -90,7 +90,9 @@ Phase 12: 통합 검증 & 성능 최적화 & 보안 감사
 
 #### DB
 
-- [ ] V2__entity_tables.sql (legal_entities, entity_relationships)
+- [ ] V3__entity_tables.sql (legal_entities, entity_relationships)
+- [ ] V4__auth_tables.sql (users, user_roles)
+- [ ] `feat:` TenantContextInterceptor — 요청마다 `SET LOCAL app.current_tenant_id = '...'` 실행 (RLS 동작 전제 조건)
 - [ ] RLS 정책 적용 (tenant_id 기반)
 
 #### API
@@ -125,6 +127,10 @@ Phase 12: 통합 검증 & 성능 최적화 & 보안 감사
 > esg-t1 BUG-P6-02 교훈: AuditTrail 누락 → @Auditable AOP로 선제 차단
 
 ### 작업 목록
+
+#### DB
+
+- [ ] V5__audit_tables.sql (`audit_logs`, `outbox_events`)
 
 #### AOP 인프라
 
@@ -168,6 +174,11 @@ Phase 12: 통합 검증 & 성능 최적화 & 보안 감사
 **목표**: 배출계수 DB 구축 및 Scope 1·2 배출량 자동 계산
 
 ### 작업 목록
+
+#### DB
+
+- [ ] V6__emission_factor_tables.sql (`emission_factors`, `factor_versions`)
+- [ ] V7__activity_emission_tables.sql (`activity_data`, `emission_records`)
 
 #### 배출계수 로더
 
@@ -234,7 +245,8 @@ Phase 12: 통합 검증 & 성능 최적화 & 보안 감사
 
 #### ESG 지표 마스터
 
-- [ ] V11__esg_indicator_tables.sql (`esg_indicators`, `unit_conversions`)
+- [ ] V8__evidence_tables.sql (`evidence_files`, `activity_data_evidence`)
+- [ ] V9__indicator_tables.sql (`esg_indicators`, `unit_conversions`)
 - [ ] S/G 기본 지표 초기 데이터 (여성 관리자 비율, 산재율, 이직률, 이사회 출석률)
 - [ ] `feat:` KSSB 2 / ISSB S2 프레임워크 매핑 YAML 로더 (멱등 upsert)
 - [ ] `feat:` Formula DSL 초기 로드 (Scope 1/2 산식 YAML)
@@ -277,7 +289,7 @@ Phase 12: 통합 검증 & 성능 최적화 & 보안 감사
 
 #### DB
 
-- [ ] V4__consolidated_emission_records.sql
+- [ ] V10__consolidated_emission_records.sql
 
 ### 완료 기준 (DoD)
 

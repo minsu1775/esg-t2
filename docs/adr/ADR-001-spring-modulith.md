@@ -16,7 +16,7 @@ esg-t1에서 Modular Monolith 원칙을 선언했으나, 컴파일 타임이나 
 
 ## 결정
 
-**Spring Modulith 1.3.x를 도입하여 컴파일 타임 + 테스트 타임 모듈 경계를 강제한다.**
+**Spring Modulith 2.0.x를 도입하여 컴파일 타임 + 테스트 타임 모듈 경계를 강제한다.**
 
 ### 모듈 규칙
 
@@ -26,12 +26,12 @@ esg-t1에서 Modular Monolith 원칙을 선언했으나, 컴파일 타임이나 
 4. 직접 Repository 크로스 참조 금지
 
 ```java
-// ModularityTest.java — CI에서 항상 실행
-@ApplicationModuleTest
-class EsgT2ModularityTests {
+// src/test/java/ai/claudecode/esgt2/ModularityTest.java — CI에서 항상 실행
+// @ApplicationModuleTest 는 단일 모듈 슬라이스 테스트용 — 전체 경계 검증에는 사용 금지
+class ModularityTest {
     @Test
     void verifyModuleStructure() {
-        ApplicationModules.of(EsgT2Application.class).verify();
+        ApplicationModules.of(Esgt2Application.class).verify();
     }
 }
 ```
