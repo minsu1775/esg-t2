@@ -77,7 +77,7 @@
 └────────────────────────────────────────────────────┘
                      │
 ┌────────────────────▼───────────────────────────────┐
-│               PostgreSQL 17 (RLS 활성화)             │
+│               PostgreSQL 18 (RLS 활성화)             │
 └────────────────────────────────────────────────────┘
 ```
 
@@ -1033,6 +1033,59 @@ CREATE INDEX idx_audit_logs_entity
 ### 캐시 전략
 - Redis: JWT 블랙리스트, 배출계수 마스터 데이터 (TTL: 24시간)
 - Spring Cache: 연결 집계 결과 (TTL: 1시간, 데이터 변경 시 무효화)
+
+---
+
+## 12-A. 용량 계획 (Capacity Planning)
+
+> MVP 단계 기준 추정치. 운영 전 실측 기반 재산정 필요.
+
+### 예상 데이터 볼륨 (테넌트당)
+
+| 데이터 | 연간 예상 건수 | 레코드 크기 | 연간 스토리지 |
+|---|---|---|---|
+| activity_data | 5,000~20,000건 | ~1KB | ~20MB |
+| emission_records | 500~2,000건 | ~500B | ~1MB |
+| audit_logs | 20,000~100,000건 | ~2KB | ~200MB |
+| evidence_files (메타) | 1,000~5,000건 | ~200B | ~1MB |
+| verification_snapshots | 2~10건/년 | ~10MB (스냅샷 전체) | ~100MB |
+
+**Append-only 특성**: 정정 발생 시 건수 2~3배 증가 가능. INSERT-only 전략으로 스토리지는 증가하지만 규제 재현성 요건 충족.
+
+### Object Storage (증빙 파일)
+
+| 조건 | 추정 |
+|---|---|
+| 증빙 파일 평균 크기 | 2MB (PDF/Excel) |
+| 연간 업로드 건수 | 1,000~5,000건 |
+| 연간 증빙 스토리지 | **2~10GB/테넌트** |
+| Object Storage 선택 | AWS S3 (운영) / MinIO (로컬) |
+
+### 동시 사용자 및 처리량
+
+| 지표 | MVP 목표 | 스케일 기준 |
+|---|---|---|
+| 동시 사용자 | 100명 | Spring Boot 기본 Virtual Threads |
+| API 처리량 | 500 req/s | 단일 인스턴스 기준 |
+| Scope 3 배치 계산 | 100개 공급업체 ≤ 30초 | Virtual Threads 병렬 처리 |
+| 보고서 PDF 생성 | ≤ 1,500ms (P95) | 비동기 처리 + 캐시 |
+
+### DB 스케일 기준선
+
+| 상황 | 대응 |
+|---|---|
+| 테넌트 10개 이하 · 단일 인스턴스 | MVP 기본 구성 (단일 PostgreSQL 18) |
+| 테넌트 10~50개 | Read Replica 추가, 인덱스 재검토 |
+| 테넌트 50개 초과 | Connection Pooling (PgBouncer) 도입, 용량 재측정 |
+| audit_logs > 1억 건 | 파티셔닝 (`PARTITION BY RANGE (created_at)`) 검토 |
+
+### 스케일아웃 시나리오
+
+```
+Phase MVP:  단일 인스턴스 (PostgreSQL 18 + Redis + Spring Boot)
+Phase M+1:  Read Replica 추가, PgBouncer
+Phase M+2:  멀티 리전 (재해 복구), 별도 Read DB
+```
 
 ---
 

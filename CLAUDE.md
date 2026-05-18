@@ -80,6 +80,7 @@ ai.claudecode.esgt2
 
 | 파일 | 내용 | 로드 조건 |
 |---|---|---|
+| `00-priority.md` | **규칙 우선순위 P0~P3** — 충돌 시 P0(테넌트 격리·감사 무결성) 절대 우선 | 항상 |
 | `01-domain-architecture.md` | Domain≠Entity, Default*, 불변성, 검증 우선, Lombok, SQL 예약어 | 항상 |
 | `02-testing.md` | TDD, TestContainers, Mock DB 금지, 테스트 격리 | `src/test/**` |
 | `03-security.md` | RBAC, RLS, 크로스테넌트 방어, JWT, Webhook 서명 | 항상 |
@@ -116,5 +117,5 @@ docs/
 ├── fix.md          # 이슈 트래킹
 ├── insight.md      # 학습 인사이트 (esg-t1 교훈 L-0-01~L-0-16)
 ├── openapi.yml     # 빌드 자동 생성
-└── adr/            # ADR-001~005
+└── adr/            # ADR-001~007
 ```
