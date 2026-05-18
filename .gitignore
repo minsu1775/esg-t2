@@ -3,8 +3,10 @@
 .vscode/
 *.iml
 
-# Claude Code
-.claude/
+# Claude Code (settings/memory는 제외, rules는 포함)
+.claude/settings*
+.claude/projects/
+.claude/*.json
 
 # Build
 build/
