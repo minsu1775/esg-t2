@@ -239,7 +239,33 @@
 
 ## Phase 1: 법인·테넌트 관리
 
-_Phase 완료 후 내용 추가 예정_
+### L-P1-01: Spring Modulith — 하위 패키지는 @NamedInterface로 공개 선언 필수
+
+**현상**: `entity.domain.LegalEntity`에서 `shared.exception.EsgException`을 import하자 `ModularityTest.모듈_경계가_유효하다`가 실패. Spring Modulith는 모듈의 하위 패키지(`shared.exception`, `shared.security`)를 기본적으로 **internal**(비공개)로 취급한다.
+
+**교훈**: 다른 모듈에서 접근해야 하는 하위 패키지에는 `package-info.java`에 `@NamedInterface`를 선언해야 한다. 루트 패키지만 자동으로 공개된다.
+
+**esg-t2 적용**: `shared.exception`, `shared.security`, `shared.tenant`, `shared.web` 패키지에 각각 `@NamedInterface` 부착.
+
+---
+
+### L-P1-02: Spring Security `requestMatchers().hasRole()` vs `@PreAuthorize` — GlobalExceptionHandler 활성화 차이
+
+**현상**: `SecurityConfig`에 `requestMatchers(POST, "/api/v1/entities").hasRole("TENANT_ADMIN")`을 설정하면, 필터 레벨에서 차단이 일어나 `accessDeniedHandler`가 `sendError(403)`을 호출한다. 이 경우 응답 본문이 없어서 `GlobalExceptionHandler.handleAccessDenied()`가 JSON 응답을 반환하지 못한다.
+
+**교훈**: RBAC를 `GlobalExceptionHandler`의 JSON 형식으로 반환하려면 세밀한 역할 제한은 `@PreAuthorize` 어노테이션으로 구현해야 한다. `SecurityConfig`에는 인증 여부(`authenticated()`)만 설정하고, 역할 기반 접근 제어는 컨트롤러 메서드 `@PreAuthorize`에 위임한다.
+
+**esg-t2 적용**: SecurityConfig는 `anyRequest().authenticated()`만 설정. 모든 컨트롤러 메서드에 `@PreAuthorize` 필수.
+
+---
+
+### L-P1-03: TenantContextInterceptor — `SET LOCAL` 대신 `set_config()` 파라미터 바인딩
+
+**현상**: `"SET LOCAL app.current_tenant_id = '" + tenantId + "'"` 형태는 SQL Injection 취약점. tenantId가 `UUID.fromString()`을 통과했어도 보안 원칙상 문자열 연결은 금지.
+
+**교훈**: PostgreSQL `set_config(setting, value, is_local)` 함수를 사용하면 `?` 파라미터 바인딩으로 SQL Injection을 방어한다. `is_local = true`로 설정하면 `SET LOCAL`과 동일한 트랜잭션 범위 격리가 적용된다.
+
+**esg-t2 적용**: `SELECT set_config('app.current_tenant_id', ?, true)` + `JdbcTemplate.queryForObject(...)` 패턴 표준화.
 
 ---
 
