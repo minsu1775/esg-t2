@@ -1,0 +1,37 @@
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASS}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  flyway:
+    locations:
+      - classpath:db/migration
+      - classpath:db/migration-pg   # PostgreSQL 전용 DDL (RLS 정책 등)
+    url: ${DB_URL}
+    user: ${DB_USER}
+    password: ${DB_PASS}
+
+  threads:
+    virtual:
+      enabled: true
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+scheduler:
+  enabled: true
+
+logging:
+  level:
+    ai.claudecode.esgt2: INFO
+    org.flywaydb: INFO
