@@ -1,0 +1,53 @@
+spring:
+  application:
+    name: esgt2
+
+  datasource:
+    url: jdbc:h2:mem:esgt2;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop   # H2 로컬: Hibernate가 스키마 관리 (Flyway는 PostgreSQL 전용)
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+
+  flyway:
+    enabled: false   # H2 로컬 개발에서는 Flyway 비활성화
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  threads:
+    virtual:
+      enabled: true
+
+  security:
+    user:
+      name: admin
+      password: admin
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+scheduler:
+  enabled: false
+
+logging:
+  level:
+    ai.claudecode.esgt2: DEBUG
+    org.flywaydb: INFO
