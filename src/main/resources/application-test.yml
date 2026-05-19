@@ -1,7 +1,7 @@
 spring:
   jpa:
     hibernate:
-      ddl-auto: validate   # TestContainers PostgreSQL: Flyway 적용 후 Hibernate 검증
+      ddl-auto: none   # TestContainers PostgreSQL: Flyway가 스키마 관리 (검증 불필요)
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect

@@ -1,12 +1,15 @@
 -- Spring Modulith: Outbox 패턴 이벤트 발행 추적 테이블 (spring-modulith-starter-jpa 필수)
+-- Spring Modulith 2.0.0: last_resubmission_date, status 컬럼 필수
 CREATE TABLE event_publication (
-    id                  UUID         NOT NULL,
-    listener_id         VARCHAR(512) NOT NULL,
-    event_type          VARCHAR(512) NOT NULL,
-    serialized_event    TEXT         NOT NULL,
-    publication_date    TIMESTAMP WITH TIME ZONE NOT NULL,
-    completion_date     TIMESTAMP WITH TIME ZONE,
-    completion_attempts INT          NOT NULL DEFAULT 0,
+    id                      UUID         NOT NULL,
+    listener_id             VARCHAR(512) NOT NULL,
+    event_type              VARCHAR(512) NOT NULL,
+    serialized_event        TEXT         NOT NULL,
+    publication_date        TIMESTAMP WITH TIME ZONE NOT NULL,
+    completion_date         TIMESTAMP WITH TIME ZONE,
+    completion_attempts     INT          NOT NULL DEFAULT 0,
+    last_resubmission_date  TIMESTAMP WITH TIME ZONE,
+    status                  VARCHAR(36),
     PRIMARY KEY (id)
 );
 

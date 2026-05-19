@@ -57,6 +57,7 @@ dependencies {
     testImplementation("org.springframework.modulith:spring-modulith-starter-test")
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
+    testImplementation("org.springframework.security:spring-security-test")
     testCompileOnly("org.projectlombok:lombok")
     testAnnotationProcessor("org.projectlombok:lombok")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
@@ -71,4 +72,10 @@ dependencyManagement {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+    // Docker Desktop 29.x requires minimum API 1.40; pass through DOCKER_HOST if set
+    listOf("DOCKER_HOST", "DOCKER_CERT_PATH", "DOCKER_TLS_VERIFY").forEach { key ->
+        System.getenv(key)?.let { environment(key, it) }
+    }
+    // Force docker-java to use API 1.40 (Docker Desktop 29.x minimum requirement)
+    systemProperty("api.version", "1.40")
 }
