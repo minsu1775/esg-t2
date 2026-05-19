@@ -103,31 +103,31 @@
 
 | ID | 태스크 | 상태 | 비고 |
 |---|---|---|---|
-| T-3-01 | V6__emission_factor_tables.sql | TODO | emission_factors, factor_versions |
-| T-3-02 | YAML 포맷 정의 — keei-2025.yaml 샘플 | TODO | 환경부 국가계수 |
-| T-3-03 | YAML 포맷 정의 — defra-2025.yaml 샘플 | TODO | DEFRA 글로벌 계수 |
-| T-3-04 | `test:` 동일 파일 2회 로드 시 중복 없음 (멱등성) | TODO | item-level upsert |
-| T-3-05 | `test:` 값 수정 후 재로드 → 올바르게 업데이트 | TODO | |
-| T-3-06 | `feat:` EmissionFactorLoader — item-level 멱등 upsert | TODO | ON CONFLICT DO UPDATE |
+| T-3-01 | V6__emission_factor_tables.sql | DONE | emission_factors (effective_from/to 포함) |
+| T-3-02 | YAML 포맷 정의 — keei-2025.yaml 샘플 | DONE | 환경부 국가계수 4종 (KEEI SNAKE_CASE) |
+| T-3-03 | YAML 포맷 정의 — defra-2025.yaml 샘플 | DONE | DEFRA 글로벌 계수 3종 |
+| T-3-04 | `test:` 동일 파일 2회 로드 시 중복 없음 (멱등성) | DONE | EmissionFactorLoaderTest |
+| T-3-05 | `test:` 값 수정 후 재로드 → 올바르게 업데이트 | DONE | |
+| T-3-06 | `feat:` EmissionFactorLoader — item-level 멱등 upsert | DONE | SNAKE_CASE ObjectMapper 필수 |
 
 ### Scope 1/2 계산
 
 | ID | 태스크 | 상태 | 비고 |
 |---|---|---|---|
-| T-3-07 | V7__activity_emission_tables.sql | TODO | activity_data, emission_records |
-| T-3-08 | `test:` Scope 1 연료 연소 계산 (경유 1톤 → CO2e) | TODO | |
-| T-3-09 | `test:` Scope 2 location-based 전력 소비 계산 | TODO | |
-| T-3-10 | `test:` Scope 2 market-based (RE 인증서 적용) | TODO | |
-| T-3-11 | `test:` 배출계수 미존재 시 예외 처리 | TODO | |
-| T-3-12 | `feat:` EmissionCalculator 도메인 서비스 (순수 함수) | TODO | |
-| T-3-13 | `feat:` EmissionFactorResolver (interface + DefaultImpl) | TODO | country·category·year 매칭 |
-| T-3-14 | `feat:` GWP 가중치 적용 (CO2e 환산) | TODO | IPCC AR6 기준 |
-| T-3-15 | `feat:` POST /api/v1/ghg/activity-data (@Auditable) | TODO | |
-| T-3-16 | `feat:` POST /api/v1/ghg/calculate?scope=SCOPE1,SCOPE2 | TODO | |
-| T-3-17 | `feat:` GET /api/v1/ghg/emission-records | TODO | 필터링 지원 |
-| T-3-18 | **[예방]** `feat:` `EmissionFactorResolver.resolveAt(category, date)` — 과거 산출 시점 계수 조회 | TODO | esg-t1 L-0-09 교훈 |
-| T-3-19 | **[예방]** `test:` 배출계수 갱신 후 과거 산출 수치 동일성 확인 (재현성 테스트) | TODO | |
-| T-3-20 | **[예방]** `test:` `EmissionCalculator` BigDecimal 사용 단위 테스트 (float/double 없음 확인) | TODO | |
+| T-3-07 | V7__activity_emission_tables.sql | DONE | activity_data (+ V8 country_code), emission_records |
+| T-3-08 | `test:` Scope 1 연료 연소 계산 (경유 1톤 → CO2e) | DONE | EmissionCalculatorTest |
+| T-3-09 | `test:` Scope 2 location-based 전력 소비 계산 | DONE | EmissionCalculatorTest |
+| T-3-10 | `test:` Scope 2 market-based (RE 인증서 적용) | DONE | EmissionCalculatorTest |
+| T-3-11 | `test:` 배출계수 미존재 시 예외 처리 | DONE | EmissionCalculatorTest |
+| T-3-12 | `feat:` EmissionCalculator 도메인 서비스 (순수 함수) | DONE | 음수 guard, scale=6 HALF_UP |
+| T-3-13 | `feat:` EmissionFactorResolver (interface + DefaultImpl) | DONE | subCategory 포함 resolveAt |
+| T-3-14 | `feat:` GWP 가중치 적용 (CO2e 환산) | DONE | GhgType.gwpAr6(), CO2E 기본 |
+| T-3-15 | `feat:` POST /api/v1/ghg/entities/{id}/activity-data (@Auditable) | DONE | ActivityData.create() + Mapper |
+| T-3-16 | `feat:` POST /api/v1/ghg/entities/{id}/calculations | DONE | /calculate→/calculations (REST 규칙) |
+| T-3-17 | `feat:` GET /api/v1/ghg/entities/{id}/emission-records | DONE | |
+| T-3-18 | **[예방]** `feat:` `EmissionFactorResolver.resolveAt(category, subCategory, countryCode, date)` | DONE | esg-t1 L-0-09 교훈 |
+| T-3-19 | **[예방]** `test:` append-only 배출 기록 — 재산출 시 기존 기록 유지 확인 | DONE | GhgIntegrationTest |
+| T-3-20 | **[예방]** `test:` `EmissionCalculator` BigDecimal scale=6 단위 테스트 | DONE | GhgIntegrationTest |
 
 ---
 

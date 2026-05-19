@@ -164,6 +164,37 @@
 | `DefaultEntityManagementService` — `LegalEntityJpaEntity.builder()` 직접 호출 | P1 | 서비스에서 JPA Entity 직접 생성 (01-domain-architecture.md 위반). Phase 3 착수 전 Mapper 도입 필요 |
 | `OutboxEventJpaEntity.markFailed()` — 에러 메시지 미기록 | P3 | 09-scheduler.md "에러 메시지 기록" 요구사항. `error_message` 컬럼 추가 + `markFailed(String msg)` 오버로드 |
 
+### 2026-05-19 | Phase 3 완료 리뷰
+
+| 항목 | 결과 | 비고 |
+|---|---|---|
+| BigDecimal 전용 산출 | ✅ | `EmissionCalculator.computeEmission()` — float/double 없음, scale=6 HALF_UP |
+| EmissionFactorResolver — 재현성 | ✅ | `resolveAt(category, subCategory, countryCode, date)` — subCategory 포함 시점 기반 조회 |
+| EmissionRecord — append-only | ✅ | `EmissionRecordRepository extends Repository<T,ID>` — delete 메서드 컴파일 타임 차단 |
+| ActivityData domain factory + mapper | ✅ | `ActivityData.create(cmd)` + `ActivityDataMapper.toEntity(domain)` — 서비스 JpaEntity.builder() 직접 호출 없음 |
+| YAML SNAKE_CASE 매핑 | ✅ | `ObjectMapper.setPropertyNamingStrategy(SNAKE_CASE)` — `sub_category` → `subCategory` |
+| @Auditable 부착 | ✅ | `ACTIVITY_DATA_CREATED`, `EMISSIONS_CALCULATED` |
+| @PreAuthorize 전수 | ✅ | `ESG_MANAGER`, `ESG_VIEWER`, `VERIFIER` 역할 구분 |
+| REST URL 규칙 | ✅ | `/calculations` (동사 금지, 04-api-design.md 준수) |
+| 통합 테스트 | ✅ PASS | GhgIntegrationTest 7건, EmissionFactorLoaderTest 3건, EmissionCalculatorTest 7건 |
+
+**Phase 3 리뷰에서 발견하여 즉시 수정한 항목**:
+
+| 발견 사항 | 심각도 | 수정 내용 |
+|---|---|---|
+| `EmissionFactorResolver.resolveAt()` — subCategory 없어 다중 결과 NonUniqueResultException | **P1** | 인터페이스·구현체·쿼리 모두 `subCategory` 파라미터 추가 |
+| `EmissionFactorYaml` YAML SNAKE_CASE 미매핑 — subCategory 등 null 파싱 | **P1** | `ObjectMapper(YAMLFactory)` 에 `SNAKE_CASE` 명명 전략 추가 |
+| `activity_data` 테이블 `country_code` 컬럼 누락 — 배출계수 조회 불가 | **P1** | `V8__activity_data_country_code.sql` + `ActivityDataJpaEntity`·`Command` 업데이트 |
+| `GhgIntegrationTest` 테넌트 FK 위반 (`00000000-...010` 미등록) | **필수** | TENANT_ID `00000000-...001` (V2 씨드)로 변경 |
+
+**잔존 기술 부채 (Phase 3-B 이후 해소 예정)**:
+
+| 항목 | 우선순위 | 내용 |
+|---|---|---|
+| `DefaultGhgService.calculateEmissions()` — `EmissionRecordJpaEntity.builder()` 직접 호출 | P1 | 서비스에서 JPA Entity 직접 생성. `EmissionRecord` 도메인 + `EmissionRecordMapper` 도입 필요 |
+| `activity_data` `standard_value`/`standard_unit` 미채움 | P2 | `UnitConverter` (T-3B-08) 구현 후 연동 필요 |
+| Phase 2 부채: `DefaultEntityManagementService` Mapper | P1 | Phase 2에서 이월 — Phase 3-B 착수 전 해소 권장 |
+
 ---
 
 ## 3. 공통 이슈 트래킹
