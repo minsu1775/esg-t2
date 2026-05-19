@@ -172,7 +172,58 @@
 
 ## Phase 0: 프로젝트 셋업
 
-_Phase 완료 후 내용 추가 예정_
+### L-P0-01: Spring Boot 4에서 TestRestTemplate·@AutoConfigureMockMvc 제거
+
+**현상**: `org.springframework.boot.test.web.client.TestRestTemplate` 및 `@AutoConfigureMockMvc` 어노테이션이 Spring Boot 4에서 완전히 제거되어 컴파일 오류 발생.
+
+**교훈**: Spring Boot 4 통합 테스트에서는 `MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build()` 패턴을 사용한다. `TestRestTemplate` 없이도 `MockMvc`로 HTTP Basic 인증, 응답 상태 검증이 가능하다.
+
+**esg-t2 적용**: `ActuatorEndpointTest` 및 이후 Controller 테스트 전체에 `MockMvcBuilders` 패턴 적용.
+
+---
+
+### L-P0-02: Spring Modulith 2.0.0 — event_publication 필수 컬럼 2개
+
+**현상**: Spring Modulith 2.0.0에서 `event_publication` 테이블에 `last_resubmission_date`와 `status` 두 컬럼이 모두 필요하다. `ddl-auto: validate`를 사용할 경우 두 컬럼 중 하나라도 없으면 기동 실패.
+
+**교훈**: Spring Modulith 버전 업그레이드 시 `event_publication` 스키마 변경사항을 반드시 Release Notes에서 확인한다. `ddl-auto: none`으로 설정하면 검증 자체를 건너뛰지만, Flyway V1에 두 컬럼을 모두 포함하는 것이 장기적으로 안전하다.
+
+**esg-t2 적용**: V1에 `status VARCHAR(36)`, `last_resubmission_date TIMESTAMP WITH TIME ZONE` 포함.
+
+---
+
+### L-P0-03: Docker Desktop 29.x + TestContainers 1.21.0 — TCP + API 버전 강제
+
+**현상**: TestContainers 1.21.0(내부 docker-java)은 Docker API 1.23을 기본으로 사용하지만, Docker Desktop 29.4.3은 최소 API 1.40을 요구해 `/v1.23/info`에서 HTTP 400 Empty Body 오류 발생.
+
+**해결 3단계**:
+1. Docker Desktop Settings → "Expose daemon on tcp://localhost:2375 without TLS" 활성화
+2. Windows 사용자 환경변수에 `DOCKER_HOST=tcp://localhost:2375` 설정
+3. `build.gradle.kts`의 Test 태스크에 `systemProperty("api.version", "1.40")` 추가 + `DOCKER_HOST` 패스스루
+
+**교훈**: Windows에서 TestContainers + Docker Desktop 최신 버전 조합 시 이 3단계 설정이 모두 필요하다. 환경변수는 Gradle 데몬 재시작 후에만 반영된다.
+
+**esg-t2 적용**: `build.gradle.kts` test 태스크에 영구 적용.
+
+---
+
+### L-P0-04: H2 + PostgreSQL 드라이버 충돌 — @DynamicPropertySource driver-class-name 오버라이드
+
+**현상**: `application.yml`에 `driver-class-name: org.h2.Driver`가 설정된 상태에서 `@DynamicPropertySource`로 PostgreSQL JDBC URL만 교체하면 H2 드라이버가 PostgreSQL URL을 처리하려다 실패.
+
+**교훈**: `@DynamicPropertySource`에서 URL 교체 시 `spring.datasource.driver-class-name`도 함께 `org.postgresql.Driver`로 오버라이드해야 한다.
+
+**esg-t2 적용**: `AbstractIntegrationTest.configureProperties()`에 드라이버 오버라이드 포함.
+
+---
+
+### L-P0-05: H2 shutdown 시 Spring Modulith event_publication WARN — 무해한 경고
+
+**현상**: `ddl-auto: create-drop` 환경(H2)에서 JVM 종료 시 Spring Modulith `DefaultEventPublicationRegistry` destroy callback이 `event_publication`을 SELECT하려 하지만, Hibernate가 이미 DROP TABLE을 실행한 후라 HHH000247 WARN이 발생.
+
+**교훈**: 이는 테스트 실패가 아닌 순수 경고이며, Spring Modulith와 Hibernate DDL-Auto 생명주기 순서의 알려진 특성이다. CI/운영(PostgreSQL + Flyway)에서는 이 현상이 발생하지 않는다.
+
+**esg-t2 적용**: 테스트 결과에서 이 WARN은 무시한다.
 
 ---
 

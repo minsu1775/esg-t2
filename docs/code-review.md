@@ -76,9 +76,25 @@
 
 ## 2. 리뷰 이력
 
-> 형식: `YYYY-MM-DD | PR#{번호} | 리뷰어 | 핵심 지적 사항`
+> 형식: `YYYY-MM-DD | 범위 | 핵심 발견 사항`
 
-_PR 생성 시 추가 예정_
+### 2026-05-19 | Phase 0 완료 리뷰
+
+| 항목 | 결과 | 비고 |
+|---|---|---|
+| 모듈 패키지 구조 | ✅ | `@ApplicationModule` 6개 모듈, `package-info.java` 구조 정상 |
+| `ModularityTest` | ✅ PASS | 모듈 경계 위반 없음 |
+| CI 파이프라인 | ✅ | `.github/workflows/ci.yml` — Java 25, TESTCONTAINERS_RYUK_DISABLED |
+| Flyway 멀티 로케이션 | ✅ | `db/migration` + `db/migration-pg` 분리 |
+| V1 스키마 | ✅ | `event_publication.status` 컬럼 추가 (Spring Modulith 2.0.0 필수) |
+| Spring Boot 4 호환성 | ✅ | `TestRestTemplate` 제거 → `MockMvcBuilders` 교체 완료 |
+| 테스트 결과 | ✅ **9 tests, 0 failures** | ActuatorEndpointTest, FlywayMigrationTest, ModularityTest, AbstractIntegrationTestTest, Esgt2ApplicationTest |
+| Redis 비활성화 전략 | ✅ | `management.health.redis.enabled=false` + Redis AutoConfig exclude |
+| Docker TCP 설정 | ✅ | `DOCKER_HOST=tcp://localhost:2375`, `api.version=1.40` |
+
+**개선 필요 사항 (Phase 1 착수 전)**:
+- `event_publication` 테이블 H2 shutdown WARN — 허용 가능한 경고 (Spring Modulith destroy callback 순서 문제). 테스트 실패 아님.
+- T-0-12 (Next.js) — UI 개발 게이트 대기 중 (사용자 승인 필요)
 
 ---
 

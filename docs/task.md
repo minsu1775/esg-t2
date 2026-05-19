@@ -11,22 +11,22 @@
 
 | ID | 태스크 | 상태 | 담당 | 비고 |
 |---|---|---|---|---|
-| T-0-01 | Spring Boot 4 + Java 25 Gradle 프로젝트 생성 (루트+frontend/) | TODO | | Spring Initializr로 wrapper 생성 후 build.gradle.kts 교체 |
-| T-0-02 | Spring Boot 4.0.x + Java 25 설정 | TODO | | build.gradle.kts 의존성 |
-| T-0-03 | Spring Modulith 의존성 + 모듈 패키지 뼈대 생성 | TODO | | ghg, entity, vw, rpt, supply, audit, shared |
-| T-0-04 | PostgreSQL 18 Docker Compose 설정 | TODO | | docker-compose.yml |
-| T-0-05 | Redis Docker Compose 설정 | TODO | | JWT 블랙리스트·캐시 |
-| T-0-06 | Flyway 설정 + V1__initial_schema.sql | TODO | | tenants, disclosure_schedules |
-| T-0-07 | AbstractIntegrationTest (Testcontainers PostgreSQL) | TODO | | 모든 통합 테스트의 부모 클래스 |
-| T-0-08 | ModularityTest 초기 설정 | TODO | | `./gradlew test --tests "*ModularityTest"` |
-| T-0-09 | GitHub Actions CI 파이프라인 | TODO | | test → modularity-check → build |
-| T-0-10 | OpenTelemetry 설정 (OTLP exporter) | TODO | | application.yml 설정 |
-| T-0-11 | Prometheus 메트릭 엔드포인트 노출 | TODO | | /actuator/prometheus |
-| T-0-12 | Next.js 15 프로젝트 초기화 | TODO | | TypeScript strict, Tailwind 4.x |
-| T-0-13 | disclosure_schedule 초기 데이터 마이그레이션 | TODO | | FY2028~2031 일정 데이터 |
-| T-0-14 | **[예방]** Flyway locations 분리 — db/migration + db/migration-pg | TODO | | esg-t1 BUG-P5-09 교훈 |
-| T-0-15 | **[예방]** application-test.yml: `scheduler.enabled=false` 설정 | TODO | | 스케줄러 테스트 격리 |
-| T-0-16 | **[예방]** AbstractIntegrationTest: `static { POSTGRES.start(); }` 패턴 | TODO | | @DynamicPropertySource 전 컨테이너 시작 보장 |
+| T-0-01 | Spring Boot 4 + Java 25 Gradle 프로젝트 생성 (루트+frontend/) | DONE | | Spring Initializr로 wrapper 생성 후 build.gradle.kts 교체 |
+| T-0-02 | Spring Boot 4.0.x + Java 25 설정 | DONE | | build.gradle.kts 의존성 |
+| T-0-03 | Spring Modulith 의존성 + 모듈 패키지 뼈대 생성 | DONE | | ghg, entity, vw, rpt, supply, audit, shared |
+| T-0-04 | PostgreSQL 18 Docker Compose 설정 | DONE | | docker-compose.yml |
+| T-0-05 | Redis Docker Compose 설정 | DONE | | JWT 블랙리스트·캐시 |
+| T-0-06 | Flyway 설정 + V1__initial_schema.sql | DONE | | tenants, disclosure_schedules, event_publication |
+| T-0-07 | AbstractIntegrationTest (Testcontainers PostgreSQL) | DONE | | 모든 통합 테스트의 부모 클래스 |
+| T-0-08 | ModularityTest 초기 설정 | DONE | | `./gradlew test --tests "*ModularityTest"` |
+| T-0-09 | GitHub Actions CI 파이프라인 | DONE | | test → modularity-check → build |
+| T-0-10 | OpenTelemetry 설정 (OTLP exporter) | DONE | | Spring Boot 4 내장 OTel, Micrometer 통합 |
+| T-0-11 | Prometheus 메트릭 엔드포인트 노출 | DONE | | /actuator/prometheus — ActuatorEndpointTest 통과 |
+| T-0-12 | Next.js 15 프로젝트 초기화 | TODO | | TypeScript strict, Tailwind 4.x — UI 개발 게이트: 사용자 승인 필요 |
+| T-0-13 | disclosure_schedule 초기 데이터 마이그레이션 | DONE | | V2__disclosure_schedule_seed.sql — KSSB 1/2, ISSB_S2, CSRD |
+| T-0-14 | **[예방]** Flyway locations 분리 — db/migration + db/migration-pg | DONE | | esg-t1 BUG-P5-09 교훈 |
+| T-0-15 | **[예방]** application-test.yml: `scheduler.enabled=false` 설정 | DONE | | 스케줄러 테스트 격리 |
+| T-0-16 | **[예방]** AbstractIntegrationTest: `static { POSTGRES.start(); }` 패턴 | DONE | | @DynamicPropertySource 전 컨테이너 시작 보장 |
 
 ---
 
