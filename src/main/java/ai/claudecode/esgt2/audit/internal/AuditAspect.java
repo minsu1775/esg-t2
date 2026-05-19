@@ -28,24 +28,22 @@ class AuditAspect {
         Instant occurredAt = Instant.now();
         Object result = joinPoint.proceed();
 
-        try {
-            var auth = SecurityContextHolder.getContext().getAuthentication();
-            if (auth instanceof JwtAuthentication jwt) {
-                UUID entityId = extractEntityId(result);
-                String entityType = result != null ? result.getClass().getSimpleName() : null;
+        // try-catch 금지: outbox 저장 실패 시 @Transactional 경계까지 예외 전파 → 비즈니스 트랜잭션 롤백
+        // (감사 추적 없는 비즈니스 커밋 방지 — P0 원칙)
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth instanceof JwtAuthentication jwt) {
+            UUID entityId = extractEntityId(result);
+            String entityType = result != null ? result.getClass().getSimpleName() : null;
 
-                outboxEventRepository.save(OutboxEventJpaEntity.builder()
-                    .id(UUID.randomUUID())
-                    .tenantId(jwt.getTenantId())
-                    .eventType(auditable.action())
-                    .actorId(jwt.getPrincipal())
-                    .entityId(entityId)
-                    .entityType(entityType)
-                    .createdAt(occurredAt)
-                    .build());
-            }
-        } catch (Exception e) {
-            log.warn("AuditAspect: outbox 저장 실패 action={}", auditable.action(), e);
+            outboxEventRepository.save(OutboxEventJpaEntity.builder()
+                .id(UUID.randomUUID())
+                .tenantId(jwt.getTenantId())
+                .eventType(auditable.action())
+                .actorId(jwt.getPrincipal())
+                .entityId(entityId)
+                .entityType(entityType)
+                .createdAt(occurredAt)
+                .build());
         }
 
         return result;

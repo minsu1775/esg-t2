@@ -291,7 +291,49 @@
 
 ## Phase 2: AuditLog & Hash Chain
 
-_Phase 완료 후 내용 추가 예정_
+### L-P2-01: AuditAspect의 try-catch는 P0 규칙 위반 — Outbox 실패는 비즈니스 트랜잭션과 함께 롤백해야 한다
+
+**현상**: `AuditAspect.audit()`에서 `outboxEventRepository.save()`를 try-catch로 감쌌다. Outbox 저장 실패 시 경고 로그만 남기고 계속 진행 → 엔티티 생성은 커밋되지만 감사 추적(Outbox 엔트리)은 없는 불일치 상태 발생.
+
+**교훈**: Outbox 패턴의 핵심은 비즈니스 작업과 Outbox INSERT가 **같은 트랜잭션**에서 원자적으로 처리되는 것이다. try-catch로 예외를 삼키면 `@Transactional` 롤백이 트리거되지 않아 원자성이 깨진다. P0(감사 무결성) 원칙에 따라 "감사 추적 없는 비즈니스 커밋"은 허용되지 않는다.
+
+**수정**: try-catch 제거. Outbox 저장 실패 시 예외가 `@Transactional` 경계까지 전파되어 엔티티 저장도 함께 롤백.
+
+**esg-t2 적용**: AuditAspect에서 예외 삼킴 금지. 이 패턴을 코드 리뷰 체크리스트에 포함.
+
+---
+
+### L-P2-02: Repository 타입 선택 — Append-only 엔티티는 컴파일 타임 방어선을 쓴다
+
+**현상**: `AuditLogRepository`가 `JpaRepository<AuditLogJpaEntity, Long>`을 상속하고 있었다. `deleteAll()`, `delete()`, `deleteById()` 등 모든 변경 메서드가 자동 노출되어, 서비스 코드에서 실수로 호출해도 컴파일 오류 없이 실행된다.
+
+**교훈**: 불변 엔티티(`AuditLog`, `CalculationResult`, `VerificationSnapshot`)의 Repository는 `Repository<T, ID>` 마커 인터페이스(Spring Data 제공)를 상속하고 필요한 메서드만 명시적으로 선언한다. delete 메서드는 컴파일 타임에 아예 노출되지 않는다. 08-persistence.md에 명시된 원칙.
+
+**부수 효과**: `AuditableIntegrationTest.cleanup()`에서 `auditLogRepository.deleteAll()`이 컴파일 오류. 테스트 정리는 `JdbcTemplate.execute("DELETE FROM audit_logs")`로 대체. 이 패턴을 기억해야 한다 — append-only Repository를 사용하는 모듈의 통합 테스트는 JdbcTemplate 또는 `@Sql`로 정리해야 한다.
+
+**esg-t2 적용**: `AuditLogRepository extends Repository<AuditLogJpaEntity, Long>`. 이후 `CalculationResultRepository`, `VerificationSnapshotRepository`도 동일 패턴.
+
+---
+
+### L-P2-03: 스케줄러 메서드에 @Transactional 직접 부착 금지 — 서비스 위임 패턴
+
+**현상**: `AuditIntegrityScheduler.verifyAllChains()`에 `@Transactional(readOnly = true)`를 직접 부착. 09-scheduler.md 규칙 위반. 스케줄러 메서드에 트랜잭션을 붙이면 스프링의 스케줄러 실행 흐름과 트랜잭션 관리가 얽혀 테스트 격리가 어려워진다.
+
+**교훈**: 스케줄러는 서비스 빈의 `@Transactional` 메서드를 호출하는 "진입점" 역할만 한다. 비즈니스 로직 + 트랜잭션은 별도 Service 빈에 위임. `AuditIntegrityScheduler` → `AuditIntegrityService.verifyAllChains()` 패턴.
+
+**esg-t2 적용**: `AuditIntegrityService` 별도 생성. 스케줄러는 위임만 수행.
+
+---
+
+### L-P2-04: AuditLog 전체 로드 대신 테넌트 ID 목록 조회 — 성능과 메모리
+
+**현상**: `AuditIntegrityScheduler.verifyAllChains()`에서 `auditLogRepository.findAll()`로 전체 감사 로그를 로드하여 distinct 테넌트 ID를 추출. 100만 건 이상의 감사 로그가 있으면 힙 메모리 폭발.
+
+**교훈**: JPQL에서 `SELECT DISTINCT a.tenantId FROM AuditLogJpaEntity a`로 테넌트 ID만 조회하는 전용 메서드를 만든다. 이후 각 테넌트별로 `findByTenantIdOrderByIdAsc(tenantId)`를 순차 호출하면 메모리 사용량이 최대 1개 테넌트의 로그 수로 제한된다.
+
+**esg-t2 적용**: `AuditLogRepository.findDistinctTenantIds()` 추가. 무결성 검증 스케줄러에서 사용.
+
+---
 
 ---
 

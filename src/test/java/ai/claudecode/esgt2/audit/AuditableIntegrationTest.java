@@ -11,8 +11,8 @@ import ai.claudecode.esgt2.support.AbstractIntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -33,6 +33,9 @@ class AuditableIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private OutboxProcessingService outboxProcessingService;
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     private static final UUID TENANT_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
     private static final UUID ACTOR_ID  = UUID.fromString("00000000-0000-0000-0000-000000000002");
 
@@ -43,9 +46,10 @@ class AuditableIntegrationTest extends AbstractIntegrationTest {
     }
 
     @BeforeEach
-    @Transactional
     void cleanup() {
-        auditLogRepository.deleteAll();
+        // AuditLogRepository는 Append-only (Repository<T,ID>) → deleteAll() 미노출
+        // JdbcTemplate으로 직접 삭제 (FK 없으므로 순서 무관)
+        jdbcTemplate.execute("DELETE FROM audit_logs");
         outboxEventRepository.deleteAll();
     }
 

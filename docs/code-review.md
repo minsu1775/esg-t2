@@ -128,7 +128,41 @@
 |---|---|---|
 | `DefaultAuthService.blacklist()` Redis key | P3 | 전체 JWT 토큰 문자열을 key로 사용 중 (300~500자). JTI claim 추가 후 JTI를 key로 교체 필요 |
 | `application.yml` JWT secret | P2 | 개발용 하드코딩 secret. 운영 환경은 `JWT_SECRET` 환경변수 오버라이드 필수 |
-| `@Auditable` AOP 미적용 | P1 | `entity.create`, `setRelationship` 메서드에 Phase 2 구현 후 부착 |
+| `@Auditable` AOP 미적용 | P1 | `entity.create`, `setRelationship` 메서드에 Phase 2 구현 후 부착 (Phase 2에서 해소) |
+
+### 2026-05-19 | Phase 2 완료 리뷰
+
+| 항목 | 결과 | 비고 |
+|---|---|---|
+| `@Auditable` AOP (AuditAspect) | ✅ | `@Aspect` + `@Around`, Outbox INSERT 정상 |
+| Hash Chain — PESSIMISTIC_WRITE 락 | ✅ | `findFirstByTenantIdOrderByIdDesc()` `@Lock(PESSIMISTIC_WRITE)` |
+| Canonical JSON 단일 직렬화 | ✅ | `HashChainCalculator.canonicalPayload()` — TreeMap 키 정렬 보장 |
+| `@ConditionalOnProperty(scheduler.enabled)` | ✅ | 두 스케줄러 모두 조건부 |
+| Outbox Poller — `fixedDelay` (zone 미사용) | ✅ | 09-scheduler.md 규칙 준수 |
+| 무결성 검증 스케줄러 — `zone=Asia/Seoul` | ✅ | 09-scheduler.md 규칙 준수 |
+| DB 인덱스 | ✅ | `idx_audit_logs_tenant`, `idx_outbox_status` 생성 |
+| 통합 테스트 4건 | ✅ PASS | Outbox 생성, AuditLog 생성, Hash Chain 연결, 비감사 메서드 확인 |
+
+**Phase 2 리뷰에서 발견하여 즉시 수정한 항목**:
+
+| 발견 사항 | 심각도 | 수정 내용 |
+|---|---|---|
+| `AuditLogRepository extends JpaRepository` — delete 메서드 노출 | **P0** | `Repository<T,ID>`로 교체, 명시적 메서드만 선언 (08-persistence.md append-only 원칙) |
+| `audit_logs` RLS 정책 + REVOKE 누락 | **P0** | `db/migration-pg/V5__audit_rls.sql` 생성 — `ENABLE ROW LEVEL SECURITY` + `REVOKE UPDATE, DELETE` |
+| `AuditAspect` try-catch로 Outbox 저장 실패 삼킴 | **P0** | try-catch 제거 — Outbox 실패 시 @Transactional 롤백 보장 |
+| `AuditIntegrityScheduler` — `@Transactional` 직접 부착 | **P1** | `AuditIntegrityService` 별도 빈 생성, 스케줄러는 위임만 수행 (09-scheduler.md 규칙) |
+| `AuditIntegrityScheduler` — `findAll()` 전체 로드 | **P2** | `findDistinctTenantIds()` JPQL 쿼리로 교체 (성능) |
+| `OutboxEventJpaEntity` — `@Setter` on status | **P2** | `@Setter` 제거 — `markProcessed()`, `markFailed()` 명시적 상태 전이 메서드만 허용 (01-domain-architecture.md) |
+| `AuditableIntegrationTest.cleanup()` — `auditLogRepository.deleteAll()` 컴파일 오류 | **필수** | `JdbcTemplate.execute("DELETE FROM audit_logs")` 교체 |
+
+**잔존 기술 부채 (Phase 3 이후 해소 예정)**:
+
+| 항목 | 우선순위 | 내용 |
+|---|---|---|
+| `OutboxProcessingService.processNow()` 단일 트랜잭션 | P2 | 모든 Outbox 이벤트를 하나의 트랜잭션으로 처리. 5번째 이벤트 실패 시 DB 상태가 오염될 수 있음. `REQUIRES_NEW` 패턴 적용 권장 (05-async-concurrency.md CSV 패턴과 동일) |
+| `AuditAspect` vs `@Transactional` 어드바이저 순서 비결정적 | P2 | 명시적 `@Order` 없이 런타임 순서에 의존. `@EnableTransactionManagement(order=0)` + `@Order(1)` on `AuditAspect`로 명시화 권장 |
+| `DefaultEntityManagementService` — `LegalEntityJpaEntity.builder()` 직접 호출 | P1 | 서비스에서 JPA Entity 직접 생성 (01-domain-architecture.md 위반). Phase 3 착수 전 Mapper 도입 필요 |
+| `OutboxEventJpaEntity.markFailed()` — 에러 메시지 미기록 | P3 | 09-scheduler.md "에러 메시지 기록" 요구사항. `error_message` 컬럼 추가 + `markFailed(String msg)` 오버로드 |
 
 ---
 

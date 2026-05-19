@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -30,14 +29,12 @@ public class OutboxEventJpaEntity {
     private UUID entityId;
     private String entityType;
 
-    @Setter
     @Column(nullable = false)
     private String status;
 
     @Column(nullable = false)
     private Instant createdAt;
 
-    @Setter
     private Instant processedAt;
 
     @Builder
