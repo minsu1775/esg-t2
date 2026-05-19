@@ -105,7 +105,9 @@ Optional<TenantEntity> findByName(@Param("name") String name);
 
 - Access Token: 15분, Refresh Token: 7일
 - 로그아웃 시 Refresh Token Redis 블랙리스트 등록
-- `jwk-set-uri` 기반 `NimbusJwtDecoder` 사용 → Keycloak 전환 시 코드 변경 최소화
+- MVP: HMAC-SHA256 자체 서명, `NimbusJwtDecoder.withSecretKey(secretKey)` 사용
+- M+1 Keycloak 전환 시: `NimbusJwtDecoder.withJwkSetUri(url)`로 빈 교체만 하면 됨
+- `JwtDecoder` 빈을 `@Configuration`으로 추상화하여 전환 코드 최소화
 
 ## Webhook 서명 검증
 

@@ -126,7 +126,6 @@ CREATE TABLE tenants (
     code         VARCHAR(50) NOT NULL UNIQUE,  -- 테넌트 식별 코드 (예: SAMSUNG, DEMO)
     name         VARCHAR(200) NOT NULL,
     country_code CHAR(2)     NOT NULL,         -- 본사 소재 국가 (ISO 3166-1)
-    plan_type    VARCHAR(50) NOT NULL DEFAULT 'ENTERPRISE',
     created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at   TIMESTAMPTZ
 );
@@ -160,10 +159,10 @@ CREATE TABLE entity_relationships (
     tenant_id       UUID NOT NULL,
     parent_id       UUID NOT NULL REFERENCES legal_entities(id),
     child_id        UUID NOT NULL REFERENCES legal_entities(id),
-    ownership_ratio NUMERIC(5,4) NOT NULL, -- 0.0000 ~ 1.0000
+    ownership_ratio NUMERIC(5,4) NOT NULL, -- 0.0001 ~ 1.0000 (0 제외: 0%는 관계 없음)
     effective_from  DATE NOT NULL,
     effective_to    DATE,
-    CHECK (ownership_ratio BETWEEN 0 AND 1),
+    CHECK (ownership_ratio > 0 AND ownership_ratio <= 1),
     CHECK (parent_id != child_id)
 );
 ```
@@ -640,8 +639,8 @@ POST /api/v1/auth/logout
 ```
 
 > **M+1 업그레이드 경로**: Keycloak OIDC (SAML 2.0 + MFA TOTP) 도입.  
-> esg-t1에서 Keycloak 통합 완료 검증. esg-t2 MVP는 구현 속도 우선으로 자체 JWT로 시작하되, `jwk-set-uri` 기반 `NimbusJwtDecoder`를 쓰면 Keycloak 전환 시 코드 변경 최소화.  
-> JWT 역할 클레임 위치: `realm_access.roles` (Keycloak 표준 위치) 또는 커스텀 클레임 — `Converter<Jwt, Collection<GrantedAuthority>>` 구현으로 처리.
+> esg-t2 MVP는 자체 JWT 발급·검증(HMAC-SHA256, `NimbusJwtDecoder.withSecretKey()`)으로 구현한다.  
+> Keycloak 전환 시 `NimbusJwtDecoder.withJwkSetUri()` 교체만으로 대응 가능하도록 `JwtDecoder` 빈을 추상화한다.
 
 ### 5.3 수치 → 증빙 역추적 (Evidence-to-Disclosure Traceability)
 
