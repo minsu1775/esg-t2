@@ -227,6 +227,16 @@
 
 ---
 
+### L-P0-06: Spring Modulith 2.0 — @ApplicationModule 없어도 직하위 패키지 자동 모듈 인식
+
+**현상**: `shared/` 패키지에 `@ApplicationModule`을 부착하지 않았는데, `ModularityTest`에서 모듈 수가 6개가 아닌 7개로 카운트됨.
+
+**교훈**: Spring Modulith 2.0은 최상위 앱 패키지(`ai.claudecode.esgt2`) 직하위의 모든 패키지를 자동으로 모듈로 인식한다. `@ApplicationModule`이 없어도 `shared/`, `ghg/` 등이 모두 모듈로 등록된다. 모듈 경계 테스트에서 "N개가 등록된다"는 assertion을 쓸 때 반드시 실제 패키지 수를 먼저 확인해야 한다.
+
+**esg-t2 적용**: `ModularityTest.모듈_7개가_등록된다()` — ghg, entity, audit, vw, rpt, supply, shared.
+
+---
+
 ## Phase 1: 법인·테넌트 관리
 
 _Phase 완료 후 내용 추가 예정_
