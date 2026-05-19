@@ -36,8 +36,8 @@
 
 | ID | 태스크 | 상태 | 비고 |
 |---|---|---|---|
-| T-1-01 | V3__entity_tables.sql — legal_entities, entity_relationships | TODO | 공통 DDL만. RLS 정책은 db/migration-pg/V3__rls_policies.sql 별도 분리 |
-| T-1-02 | V4__auth_tables.sql — users, user_roles | TODO | |
+| T-1-01 | V3__entity_tables.sql — legal_entities, entity_relationships | DONE | 공통 DDL만. RLS 정책은 db/migration-pg/V3__rls_policies.sql 별도 분리 |
+| T-1-02 | V4__auth_tables.sql — users, user_roles | DONE | |
 
 ### 도메인
 
