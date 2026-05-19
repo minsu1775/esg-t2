@@ -363,6 +363,8 @@
 | T-12-14 | **[예방]** `EmissionCalculator` 코드 전체 `float`/`double` grep — 0건 확인 | TODO | BigDecimal 전수 감사 |
 | T-12-15 | **[예방]** N+1 쿼리 검증 — Hibernate statistics로 주요 API 3개 쿼리 수 측정 | TODO | |
 | T-12-16 | **[예방]** 전체 컨트롤러 `@PreAuthorize` 누락 엔드포인트 grep 검증 — 0건 확인 | TODO | |
+| T-12-17 | Legacy Data Migration 배치 스펙 정의 | TODO | 엑셀·타 시스템 과거 데이터 이관 배치 Job 설계 (ADR-009 작성 포함) |
+| T-12-18 | Legacy Data Migration 배치 구현 및 검증 | TODO | CSV/Excel 업로드 → staging → 검증 → audit_logs 생성 순 처리 |
 
 ---
 
@@ -384,3 +386,5 @@
 | 날짜 | 검토자 | 버전 | 주요 변경 |
 |---|---|---|---|
 | 2026-05-18 | Claude Code (esg-t2 기획) | 1.0 | 초안 작성 |
+| 2026-05-19 | Claude Code (Phase 0 완료) | 1.1 | Phase 0 전체 DONE, T-0-10 SKIP, T-0-12 버전 수정 |
+| 2026-05-19 | Claude Code (Gemini 리뷰 반영) | 1.2 | T-12-17~18 Legacy Migration 태스크 추가 |
