@@ -11,7 +11,8 @@ import org.testcontainers.containers.PostgreSQLContainer;
     properties = {
         "spring.autoconfigure.exclude=" +
             "org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration," +
-            "org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration"
+            "org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration," +
+            "org.springframework.boot.autoconfigure.data.redis.RedisReactiveAutoConfiguration"
     }
 )
 @ActiveProfiles("test")

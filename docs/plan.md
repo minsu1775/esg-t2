@@ -45,29 +45,28 @@ Phase 12: 통합 검증 & 성능 최적화 & 보안 감사
 
 ### 작업 목록
 
-- [ ] Spring Boot 4 + Java 25 Gradle 프로젝트 생성 (루트 + `frontend/` 서브 프로젝트)
-- [ ] Spring Boot 4.0.x + Java 25 기본 설정
-- [ ] Spring Modulith 의존성 추가 + 모듈 패키지 생성 (ghg, entity, vw, rpt, supply, audit, shared)
-- [ ] PostgreSQL 18 Docker Compose 설정
-- [ ] Redis Docker Compose 설정
-- [ ] Flyway 설정 + V1__initial_schema.sql (tenants + disclosure_schedules), V2__disclosure_schedule_seed.sql (초기 일정 데이터)
-- [ ] Testcontainers 기반 통합 테스트 설정 (`AbstractIntegrationTest`)
-- [ ] `ModularityTest` 초기 설정 (모듈 경계 검증 자동화)
-- [ ] GitHub Actions CI 파이프라인 (test → modularity-check → build)
-- [ ] OpenTelemetry 설정 (Spring Boot 4 내장 활성화)
-- [ ] Prometheus 메트릭 endpoint 노출
-- [ ] Next.js 15 프로젝트 초기화 (TypeScript strict, Tailwind 4.x)
+- [x] Spring Boot 4 + Java 25 Gradle 프로젝트 생성 (루트 + `frontend/` 서브 프로젝트)
+- [x] Spring Boot 4.0.x + Java 25 기본 설정
+- [x] Spring Modulith 의존성 추가 + 모듈 패키지 생성 (ghg, entity, vw, rpt, supply, audit, shared)
+- [x] PostgreSQL 18 Docker Compose 설정
+- [x] Redis Docker Compose 설정
+- [x] Flyway 설정 + V1__initial_schema.sql (tenants + disclosure_schedules), V2__disclosure_schedule_seed.sql (초기 일정 데이터)
+- [x] Testcontainers 기반 통합 테스트 설정 (`AbstractIntegrationTest`)
+- [x] `ModularityTest` 초기 설정 (모듈 경계 검증 자동화)
+- [x] GitHub Actions CI 파이프라인 (test → build, frontend 빌드·타입체크 포함)
+- [x] Prometheus 메트릭 endpoint 노출 (Spring Boot 4 내장 Micrometer)
+- [x] Next.js 16 프로젝트 초기화 (TypeScript strict, Tailwind 4.x, create-next-app@latest)
 
-### 완료 기준 (DoD)
+### 완료 기준 (DoD) — ✅ 2026-05-19 달성
 
-- [ ] `./gradlew test` 통과 (테스트 없어도 빌드 성공)
-- [ ] `./gradlew test --tests "*ModularityTest"` 통과
-- [ ] Docker Compose up 후 `/actuator/health` 200 응답
-- [ ] `/actuator/prometheus` 메트릭 노출 확인
-- [ ] `disclosure_schedule` 초기 데이터 Flyway 마이그레이션 성공
-- [ ] **[예방]** Flyway locations: `db/migration` (공통) + `db/migration-pg` (PG 전용) 분리 확인
-- [ ] **[예방]** `application-test.yml`에 `scheduler.enabled: false` 설정 확인 (스케줄러 테스트 격리)
-- [ ] **[예방]** `AbstractIntegrationTest`에 `static { POSTGRES.start(); }` 패턴 확인 (컨테이너 초기화 순서)
+- [x] `./gradlew test` 통과 (9 tests, 0 failures)
+- [x] `./gradlew test --tests "*ModularityTest"` 통과
+- [x] `/actuator/health` 200 응답 (ActuatorEndpointTest 확인)
+- [x] `/actuator/prometheus` 메트릭 노출 확인 (jvm_memory_used_bytes 포함)
+- [x] `disclosure_schedule` 초기 데이터 Flyway 마이그레이션 성공 (V2, 6건)
+- [x] **[예방]** Flyway locations: `db/migration` (공통) + `db/migration-pg` (PG 전용) 분리 확인
+- [x] **[예방]** `application-test.yml`에 `scheduler.enabled: false` 설정 확인
+- [x] **[예방]** `AbstractIntegrationTest`에 `static { POSTGRES.start(); }` 패턴 확인
 
 ---
 

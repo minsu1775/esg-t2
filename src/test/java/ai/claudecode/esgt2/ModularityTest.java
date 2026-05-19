@@ -3,6 +3,8 @@ package ai.claudecode.esgt2;
 import org.junit.jupiter.api.Test;
 import org.springframework.modulith.core.ApplicationModules;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 class ModularityTest {
 
     ApplicationModules modules = ApplicationModules.of(Esgt2Application.class);
@@ -13,7 +15,8 @@ class ModularityTest {
     }
 
     @Test
-    void 모듈_목록_출력() {
-        modules.forEach(System.out::println);
+    void 모듈_7개가_등록된다() {
+        // ghg, entity, audit, vw, rpt, supply, shared
+        assertThat(modules.stream().count()).isEqualTo(7);
     }
 }

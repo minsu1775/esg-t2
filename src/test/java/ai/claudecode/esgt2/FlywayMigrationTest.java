@@ -38,4 +38,22 @@ class FlywayMigrationTest extends AbstractIntegrationTest {
         );
         assertThat(migrationCount).isEqualTo(1);
     }
+
+    @Test
+    void disclosure_schedules_시드_데이터가_6건_이상_존재한다() {
+        Integer count = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM disclosure_schedules",
+            Integer.class
+        );
+        assertThat(count).isGreaterThanOrEqualTo(6);
+    }
+
+    @Test
+    void 데모_테넌트_시드_데이터가_존재한다() {
+        Integer count = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM tenants WHERE code = 'DEMO'",
+            Integer.class
+        );
+        assertThat(count).isEqualTo(1);
+    }
 }

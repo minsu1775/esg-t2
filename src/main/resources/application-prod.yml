@@ -1,8 +1,16 @@
+# ⚠️ 프로덕션 배포 시 반드시 아래 환경변수를 설정하세요
+# DB_URL, DB_USER, DB_PASS, REDIS_HOST, REDIS_PORT
+# SPRING_SECURITY_USER_NAME, SPRING_SECURITY_USER_PASSWORD (기본값 admin/admin 덮어쓰기 필수)
 spring:
   datasource:
     url: ${DB_URL}
     username: ${DB_USER}
     password: ${DB_PASS}
+
+  security:
+    user:
+      name: ${SPRING_SECURITY_USER_NAME}
+      password: ${SPRING_SECURITY_USER_PASSWORD}
 
   jpa:
     hibernate:

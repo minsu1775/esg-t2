@@ -20,9 +20,9 @@
 | T-0-07 | AbstractIntegrationTest (Testcontainers PostgreSQL) | DONE | | 모든 통합 테스트의 부모 클래스 |
 | T-0-08 | ModularityTest 초기 설정 | DONE | | `./gradlew test --tests "*ModularityTest"` |
 | T-0-09 | GitHub Actions CI 파이프라인 | DONE | | test → modularity-check → build |
-| T-0-10 | OpenTelemetry 설정 (OTLP exporter) | DONE | | Spring Boot 4 내장 OTel, Micrometer 통합 |
+| T-0-10 | OpenTelemetry 설정 (OTLP exporter) | SKIP | | OTLP exporter는 Phase 12 관측성 구축 단계로 이동. Prometheus(T-0-11)로 대체 |
 | T-0-11 | Prometheus 메트릭 엔드포인트 노출 | DONE | | /actuator/prometheus — ActuatorEndpointTest 통과 |
-| T-0-12 | Next.js 15 프로젝트 초기화 | DONE | | TypeScript strict, Tailwind 4.x, App Router, frontend/src/ 구조 |
+| T-0-12 | Next.js 프로젝트 초기화 (latest) | DONE | | Next.js 16.2.6, TypeScript strict, Tailwind 4.x, App Router, frontend/src/ 구조 |
 | T-0-13 | disclosure_schedule 초기 데이터 마이그레이션 | DONE | | V2__disclosure_schedule_seed.sql — KSSB 1/2, ISSB_S2, CSRD |
 | T-0-14 | **[예방]** Flyway locations 분리 — db/migration + db/migration-pg | DONE | | esg-t1 BUG-P5-09 교훈 |
 | T-0-15 | **[예방]** application-test.yml: `scheduler.enabled=false` 설정 | DONE | | 스케줄러 테스트 격리 |
