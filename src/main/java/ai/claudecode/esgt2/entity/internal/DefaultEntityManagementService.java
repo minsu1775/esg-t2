@@ -14,6 +14,7 @@ import ai.claudecode.esgt2.entity.infra.EntityRelationshipJpaEntity;
 import ai.claudecode.esgt2.entity.infra.EntityRelationshipRepository;
 import ai.claudecode.esgt2.entity.infra.LegalEntityJpaEntity;
 import ai.claudecode.esgt2.entity.infra.LegalEntityRepository;
+import ai.claudecode.esgt2.shared.audit.Auditable;
 import ai.claudecode.esgt2.shared.exception.EsgErrorCode;
 import ai.claudecode.esgt2.shared.exception.EsgException;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,7 @@ class DefaultEntityManagementService implements EntityManagementService {
 
     @Override
     @Transactional
+    @Auditable(action = "ENTITY_CREATED")
     public EntityResponse create(UUID tenantId, CreateEntityRequest request) {
         var cmd = new CreateLegalEntityCommand(tenantId, request.name(),
             request.countryCode(), request.entityType());
@@ -58,6 +60,7 @@ class DefaultEntityManagementService implements EntityManagementService {
 
     @Override
     @Transactional
+    @Auditable(action = "ENTITY_RELATIONSHIP_SET")
     public RelationshipResponse setRelationship(UUID tenantId, UUID parentId, SetRelationshipRequest request) {
         legalEntityRepository.findById(parentId)
             .filter(e -> e.getTenantId().equals(tenantId))

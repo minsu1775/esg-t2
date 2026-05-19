@@ -75,25 +75,25 @@
 
 | ID | 태스크 | 상태 | 비고 |
 |---|---|---|---|
-| T-2-01 | V5__audit_tables.sql — audit_logs, outbox_events | TODO | BIGSERIAL PK, Hash Chain 컬럼 |
-| T-2-02 | `@Auditable` 어노테이션 정의 | TODO | shared 패키지 |
-| T-2-03 | `test:` @Auditable 메서드 실행 → AuditLog 자동 기록 | TODO | |
-| T-2-04 | `feat:` AuditAspect (Around advice) | TODO | Before/After 상태 캡처 |
-| T-2-05 | `feat:` DB Outbox Pattern — outbox_events 저장 | TODO | 트랜잭션 내 저장 |
-| T-2-06 | `feat:` Outbox Poller — ApplicationEventPublisher | TODO | 1초 간격 폴링 |
-| T-2-07 | `test:` Outbox 처리 실패 → 재시도 후 완료 | TODO | |
+| T-2-01 | V5__audit_tables.sql — audit_logs, outbox_events | DONE | BIGSERIAL PK, Hash Chain 컬럼 |
+| T-2-02 | `@Auditable` 어노테이션 정의 | DONE | shared/audit 패키지 @NamedInterface |
+| T-2-03 | `test:` @Auditable 메서드 실행 → AuditLog 자동 기록 | DONE | |
+| T-2-04 | `feat:` AuditAspect (Around advice) | DONE | Outbox 저장 경유 |
+| T-2-05 | `feat:` DB Outbox Pattern — outbox_events 저장 | DONE | 트랜잭션 내 저장 |
+| T-2-06 | `feat:` Outbox Poller — ApplicationEventPublisher | DONE | OutboxProcessingService(항상) + OutboxPollerScheduler(조건부) |
+| T-2-07 | `test:` Outbox 처리 실패 → 재시도 후 완료 | DONE | AuditableIntegrationTest 4건 |
 
 ### Hash Chain
 
 | ID | 태스크 | 상태 | 비고 |
 |---|---|---|---|
-| T-2-08 | `test:` Hash Chain 위변조 탐지 | TODO | 중간 항목 수정 시 이후 무효화 |
-| T-2-09 | `feat:` HashChainCalculator 도메인 서비스 | TODO | SHA-256 |
-| T-2-10 | `feat:` AuditLog 저장 — PESSIMISTIC_WRITE 락 + 해시 계산 | TODO | esg-t1 synchronized 버그 교훈 |
-| T-2-11 | `feat:` 무결성 검증 스케줄러 (매일 새벽 2시) | TODO | 불일치 시 알림 이벤트 |
-| T-2-12 | **[예방]** `feat:` 스케줄러 `zone = "Asia/Seoul"` + `@ConditionalOnProperty` 적용 | TODO | esg-t1 BUG-P4-12 교훈 |
-| T-2-13 | **[예방]** `feat:` `canonicalPayload()` 단일 정적 메서드 (저장·검증 경로 동일) | TODO | esg-t1 L-0-08 교훈 |
-| T-2-14 | **[예방]** `test:` 해시 저장 경로와 검증 경로가 동일 직렬화 결과임을 단위 테스트로 검증 | TODO | |
+| T-2-08 | `test:` Hash Chain 위변조 탐지 | DONE | HashChainCalculatorTest 7건 |
+| T-2-09 | `feat:` HashChainCalculator 도메인 서비스 | DONE | SHA-256 |
+| T-2-10 | `feat:` AuditLog 저장 — PESSIMISTIC_WRITE 락 + 해시 계산 | DONE | findFirstByTenantIdOrderByIdDesc @Lock |
+| T-2-11 | `feat:` 무결성 검증 스케줄러 (매일 새벽 2시) | DONE | AuditIntegrityScheduler |
+| T-2-12 | **[예방]** `feat:` 스케줄러 `zone = "Asia/Seoul"` + `@ConditionalOnProperty` 적용 | DONE | cron + zone + @ConditionalOnProperty |
+| T-2-13 | **[예방]** `feat:` `canonicalPayload()` 단일 정적 메서드 (저장·검증 경로 동일) | DONE | HashChainCalculator.canonicalPayload() |
+| T-2-14 | **[예방]** `test:` 해시 저장 경로와 검증 경로가 동일 직렬화 결과임을 단위 테스트로 검증 | DONE | |
 
 ---
 
