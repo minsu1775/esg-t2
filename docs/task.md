@@ -43,29 +43,29 @@
 
 | ID | 태스크 | 상태 | 비고 |
 |---|---|---|---|
-| T-1-03 | `test:` LegalEntity 생성 실패 케이스 (필수 필드 누락, 국가코드 유효성) | TODO | |
-| T-1-04 | `feat:` LegalEntity 도메인 + 팩토리 메서드 | TODO | `LegalEntity.create(cmd)` |
-| T-1-05 | `test:` EntityRelationship 지분율 범위 유효성 (0~1) | TODO | |
-| T-1-06 | `feat:` EntityRelationship 도메인 + 순환 참조 방지 | TODO | DAG 사이클 탐지 |
-| T-1-07 | `test:` EntityRelationshipGraph 트리 탐색 | TODO | 부모→자식 경로 순회 |
-| T-1-08 | `feat:` EntityRelationshipGraph 구현 | TODO | |
+| T-1-03 | `test:` LegalEntity 생성 실패 케이스 (필수 필드 누락, 국가코드 유효성) | DONE | |
+| T-1-04 | `feat:` LegalEntity 도메인 + 팩토리 메서드 | DONE | `LegalEntity.create(cmd)` |
+| T-1-05 | `test:` EntityRelationship 지분율 범위 유효성 (0~1) | DONE | |
+| T-1-06 | `feat:` EntityRelationship 도메인 + 순환 참조 방지 | DONE | DAG 사이클 탐지 |
+| T-1-07 | `test:` EntityRelationshipGraph 트리 탐색 | DONE | 부모→자식 경로 순회 |
+| T-1-08 | `feat:` EntityRelationshipGraph 구현 | DONE | |
 
 ### 보안·API
 
 | ID | 태스크 | 상태 | 비고 |
 |---|---|---|---|
-| T-1-09 | `test:` TENANT_ADMIN만 법인 생성 가능 (보안 테스트) | TODO | |
-| T-1-10 | `feat:` Spring Security RBAC 설정 + JwtAuthenticationFilter | TODO | 6개 역할, HMAC-SHA256 자체 JWT |
-| T-1-11 | **[필수]** `feat:` TenantContextInterceptor — 요청마다 `SET LOCAL app.current_tenant_id` | TODO | RLS 전제 조건 — SecurityFilter 이후, API 이전에 위치 |
-| T-1-12 | `feat:` JWT 발급 (POST /api/v1/auth/login) | TODO | Access 15분, Refresh 7일 |
-| T-1-13 | `feat:` JWT 갱신 (POST /api/v1/auth/refresh) | TODO | |
-| T-1-14 | `feat:` 로그아웃 — Redis 블랙리스트 (POST /api/v1/auth/logout) | TODO | |
-| T-1-15 | `feat:` 법인 등록 API (POST /api/v1/entities) | TODO | @Auditable 어노테이션 부착 (AOP는 Phase 2) |
-| T-1-16 | `feat:` 법인 목록 API (GET /api/v1/entities) | TODO | 트리 구조 응답 |
+| T-1-09 | `test:` TENANT_ADMIN만 법인 생성 가능 (보안 테스트) | DONE | |
+| T-1-10 | `feat:` Spring Security RBAC 설정 + JwtAuthenticationFilter | DONE | 6개 역할, HMAC-SHA256 자체 JWT |
+| T-1-11 | **[필수]** `feat:` TenantContextInterceptor — 요청마다 `SET LOCAL app.current_tenant_id` | DONE | RLS 전제 조건 — SecurityFilter 이후, API 이전에 위치 |
+| T-1-12 | `feat:` JWT 발급 (POST /api/v1/auth/login) | DONE | Access 15분, Refresh 7일 |
+| T-1-13 | `feat:` JWT 갱신 (POST /api/v1/auth/refresh) | DONE | |
+| T-1-14 | `feat:` 로그아웃 — Redis 블랙리스트 (POST /api/v1/auth/logout) | DONE | |
+| T-1-15 | `feat:` 법인 등록 API (POST /api/v1/entities) | DONE | @Auditable 어노테이션 부착 (AOP는 Phase 2) |
+| T-1-16 | `feat:` 법인 목록 API (GET /api/v1/entities) | DONE | 트리 구조 응답 |
 | T-1-17 | `feat:` 관계 설정 API (PUT /api/v1/entities/{id}/relationships) | TODO | |
-| T-1-18 | **[예방]** `test:` `AccessDeniedException` → 403 응답 확인 (미처리 시 500) | TODO | esg-t1 L-0-10 교훈 |
+| T-1-18 | **[예방]** `test:` `AccessDeniedException` → 403 응답 확인 (미처리 시 500) | DONE | esg-t1 L-0-10 교훈 |
 | T-1-19 | **[예방]** `test:` `ObjectOptimisticLockingFailureException` → 409 응답 확인 | TODO | |
-| T-1-20 | **[예방]** `test:` ERROR severity 검증 실패 → `create()` 차단 확인 (검증 우선 원칙) | TODO | esg-t1 BUG-P3-04 교훈 |
+| T-1-20 | **[예방]** `test:` ERROR severity 검증 실패 → `create()` 차단 확인 (검증 우선 원칙) | DONE | esg-t1 BUG-P3-04 교훈 |
 
 ---
 

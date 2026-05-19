@@ -5,14 +5,12 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.JwtValidationException;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -35,15 +33,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             var jwt = jwtTokenProvider.decode(token);
             List<String> roles = jwt.getClaimAsStringList("roles");
+            UUID userId = UUID.fromString(jwt.getSubject());
+            String tenantIdStr = jwt.getClaimAsString("tenantId");
+            UUID tenantId = tenantIdStr != null ? UUID.fromString(tenantIdStr) : null;
 
-            var authorities = (roles == null ? List.<String>of() : roles).stream()
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
-                .toList();
-
-            var authentication = new UsernamePasswordAuthenticationToken(
-                jwt.getSubject(), null, authorities);
+            var authentication = new JwtAuthentication(userId, tenantId,
+                roles == null ? List.of() : roles);
             SecurityContextHolder.getContext().setAuthentication(authentication);
-        } catch (JwtValidationException e) {
+        } catch (Exception e) {
             SecurityContextHolder.clearContext();
         }
 

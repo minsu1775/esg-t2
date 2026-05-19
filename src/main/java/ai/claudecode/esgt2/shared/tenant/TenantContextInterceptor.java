@@ -4,9 +4,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
+import ai.claudecode.esgt2.shared.security.JwtAuthentication;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -40,9 +40,8 @@ public class TenantContextInterceptor implements HandlerInterceptor {
     }
 
     private String extractTenantId(Authentication auth) {
-        Object principal = auth.getPrincipal();
-        if (principal instanceof Jwt jwt) {
-            return jwt.getClaimAsString("tenantId");
+        if (auth instanceof JwtAuthentication jwtAuth && jwtAuth.getTenantId() != null) {
+            return jwtAuth.getTenantId().toString();
         }
         return null;
     }
