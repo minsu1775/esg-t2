@@ -62,9 +62,9 @@
 | T-1-14 | `feat:` 로그아웃 — Redis 블랙리스트 (POST /api/v1/auth/logout) | DONE | |
 | T-1-15 | `feat:` 법인 등록 API (POST /api/v1/entities) | DONE | @Auditable 어노테이션 부착 (AOP는 Phase 2) |
 | T-1-16 | `feat:` 법인 목록 API (GET /api/v1/entities) | DONE | 트리 구조 응답 |
-| T-1-17 | `feat:` 관계 설정 API (PUT /api/v1/entities/{id}/relationships) | TODO | |
+| T-1-17 | `feat:` 관계 설정 API (PUT /api/v1/entities/{id}/relationships) | DONE | |
 | T-1-18 | **[예방]** `test:` `AccessDeniedException` → 403 응답 확인 (미처리 시 500) | DONE | esg-t1 L-0-10 교훈 |
-| T-1-19 | **[예방]** `test:` `ObjectOptimisticLockingFailureException` → 409 응답 확인 | TODO | |
+| T-1-19 | **[예방]** `test:` `ObjectOptimisticLockingFailureException` → 409 응답 확인 | DONE | |
 | T-1-20 | **[예방]** `test:` ERROR severity 검증 실패 → `create()` 차단 확인 (검증 우선 원칙) | DONE | esg-t1 BUG-P3-04 교훈 |
 
 ---

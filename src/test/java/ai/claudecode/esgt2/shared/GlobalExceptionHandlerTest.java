@@ -11,6 +11,7 @@ import org.springframework.web.context.WebApplicationContext;
 
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import org.springframework.web.bind.annotation.PostMapping;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -52,5 +53,30 @@ class GlobalExceptionHandlerTest extends AbstractIntegrationTest {
                     """))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+    }
+
+    @Test
+    @WithMockUser(roles = "TENANT_ADMIN")
+    void OptimisticLockingFailureException이_409로_반환된다() throws Exception {
+        // @Auditable 컨트롤러가 없어도 /test/optimistic-lock 엔드포인트로 검증
+        // 여기서는 standaloneSetup으로 직접 검증
+        var exceptionController = new OptimisticLockTestController();
+        var standaloneSetup = MockMvcBuilders.standaloneSetup(exceptionController)
+            .setControllerAdvice(context.getBean(ai.claudecode.esgt2.shared.web.GlobalExceptionHandler.class))
+            .build();
+
+        standaloneSetup.perform(post("/test/optimistic-lock"))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.code").value("OPTIMISTIC_LOCK_CONFLICT"));
+    }
+
+    @org.springframework.web.bind.annotation.RestController
+    @org.springframework.web.bind.annotation.RequestMapping("/test")
+    static class OptimisticLockTestController {
+        @PostMapping("/optimistic-lock")
+        @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")
+        public String trigger() {
+            throw new org.springframework.dao.OptimisticLockingFailureException("test conflict");
+        }
     }
 }

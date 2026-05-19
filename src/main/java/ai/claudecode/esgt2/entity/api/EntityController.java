@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 
 @RestController
 @RequestMapping("/api/v1/entities")
@@ -45,5 +47,20 @@ public class EntityController {
     public ResponseEntity<List<EntityResponse>> findAll(
             @AuthenticationPrincipal JwtAuthentication auth) {
         return ResponseEntity.ok(entityManagementService.findAll(auth.getTenantId()));
+    }
+
+    @Operation(summary = "법인 관계 설정", description = "부모 법인과 자식 법인 간의 지분 관계를 설정합니다.")
+    @ApiResponse(responseCode = "201", description = "관계 설정 성공")
+    @ApiResponse(responseCode = "400", description = "유효하지 않은 관계 (순환 참조 등)")
+    @ApiResponse(responseCode = "403", description = "권한 없음 (TENANT_ADMIN 필요)")
+    @PutMapping("/{parentId}/relationships")
+    @PreAuthorize("hasRole('TENANT_ADMIN')")
+    public ResponseEntity<RelationshipResponse> setRelationship(
+            @AuthenticationPrincipal JwtAuthentication auth,
+            @PathVariable UUID parentId,
+            @RequestBody @Valid SetRelationshipRequest request) {
+        RelationshipResponse response = entityManagementService.setRelationship(
+            auth.getTenantId(), parentId, request);
+        return ResponseEntity.status(201).body(response);
     }
 }
