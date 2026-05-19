@@ -1,8 +1,19 @@
 package ai.claudecode.esgt2.entity.internal;
 
-import ai.claudecode.esgt2.entity.api.*;
-import ai.claudecode.esgt2.entity.domain.*;
-import ai.claudecode.esgt2.entity.infra.*;
+import ai.claudecode.esgt2.entity.api.CreateEntityRequest;
+import ai.claudecode.esgt2.entity.api.EntityManagementService;
+import ai.claudecode.esgt2.entity.api.EntityResponse;
+import ai.claudecode.esgt2.entity.api.RelationshipResponse;
+import ai.claudecode.esgt2.entity.api.SetRelationshipRequest;
+import ai.claudecode.esgt2.entity.domain.CreateEntityRelationshipCommand;
+import ai.claudecode.esgt2.entity.domain.CreateLegalEntityCommand;
+import ai.claudecode.esgt2.entity.domain.EntityRelationship;
+import ai.claudecode.esgt2.entity.domain.EntityRelationshipGraph;
+import ai.claudecode.esgt2.entity.domain.LegalEntity;
+import ai.claudecode.esgt2.entity.infra.EntityRelationshipJpaEntity;
+import ai.claudecode.esgt2.entity.infra.EntityRelationshipRepository;
+import ai.claudecode.esgt2.entity.infra.LegalEntityJpaEntity;
+import ai.claudecode.esgt2.entity.infra.LegalEntityRepository;
 import ai.claudecode.esgt2.shared.exception.EsgErrorCode;
 import ai.claudecode.esgt2.shared.exception.EsgException;
 import lombok.RequiredArgsConstructor;

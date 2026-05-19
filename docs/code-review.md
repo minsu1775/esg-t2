@@ -96,6 +96,40 @@
 - `event_publication` 테이블 H2 shutdown WARN — 허용 가능한 경고 (Spring Modulith destroy callback 순서 문제). 테스트 실패 아님.
 - T-0-12 (Next.js) — UI 개발 게이트 대기 중 (사용자 승인 필요)
 
+### 2026-05-19 | Phase 1 완료 리뷰
+
+| 항목 | 결과 | 비고 |
+|---|---|---|
+| Domain≠Entity 원칙 | ✅ | LegalEntity, EntityRelationship 순수 Java record. JPA entity 분리 완료 |
+| `DomainObject.create(cmd)` 팩토리 | ✅ | 서비스에서 domain factory 경유, JpaEntity.builder() 직접 호출 없음 |
+| 검증 우선 원칙 | ✅ | `create()` 호출 전 파라미터 검증 완료 (ValidationFirstPrincipleTest 3건) |
+| EntityRelationshipGraph DAG 사이클 탐지 | ✅ | DFS + inStack 방식, EsgException(VALIDATION_FAILED) 발생 |
+| JWT 인증 흐름 | ✅ | NimbusJwtEncoder/Decoder, 15분/7일 토큰, Redis 블랙리스트 |
+| TenantContextInterceptor set_config() | ✅ | SQL 파라미터 바인딩 사용, 문자열 연결 없음 (L-P1-03 반영) |
+| @NamedInterface 선언 | ✅ | shared/exception, security, tenant, web 4개 패키지 선언 (L-P1-01 반영) |
+| SecurityConfig vs @PreAuthorize | ✅ | 역할 matchers 제거, 전부 @PreAuthorize로 통일 (L-P1-02 반영) |
+| ModularityTest | ✅ PASS | 모듈 경계 위반 없음 |
+| 전체 테스트 | ✅ **47 tests, 0 failures** | Phase 0(9) + Phase 1(38) |
+
+**Phase 1 리뷰에서 발견하여 즉시 수정한 항목**:
+
+| 발견 사항 | 심각도 | 수정 내용 |
+|---|---|---|
+| `JwtTokenProvider.secretKey()` 매 요청마다 SecretKey 재생성 | P2 | explicit constructor로 `secretKey` + `jwtDecoder` 캐싱 |
+| `JwtAuthenticationFilter` catch(Exception) 광범위 처리 | P2 | `JwtException` 별도 catch → 나머지 warn 로그 |
+| `DefaultAuthService.refresh()` `@Transactional` 누락 | P2 | `@Transactional(readOnly = true)` 추가 |
+| `DefaultEntityManagementService` 와일드카드 임포트 | P3 | 명시적 임포트로 교체 |
+| DTO 전체 `@Schema` 어노테이션 미적용 | P3 | `CreateEntityRequest`, `EntityResponse` 등 8개 DTO에 `@Schema` 추가 |
+| `EntityControllerSecurityTest` TENANT_ADMIN 테스트 NPE | P2 | `@WithMockJwtUser` 테스트 어노테이션 생성, 테스트 교체 |
+
+**잔존 기술 부채 (Phase 2 이후 해소 예정)**:
+
+| 항목 | 우선순위 | 내용 |
+|---|---|---|
+| `DefaultAuthService.blacklist()` Redis key | P3 | 전체 JWT 토큰 문자열을 key로 사용 중 (300~500자). JTI claim 추가 후 JTI를 key로 교체 필요 |
+| `application.yml` JWT secret | P2 | 개발용 하드코딩 secret. 운영 환경은 `JWT_SECRET` 환경변수 오버라이드 필수 |
+| `@Auditable` AOP 미적용 | P1 | `entity.create`, `setRelationship` 메서드에 Phase 2 구현 후 부착 |
+
 ---
 
 ## 3. 공통 이슈 트래킹
@@ -104,7 +138,7 @@
 
 | 이슈 패턴 | 발생 횟수 | 대응 |
 |---|---|---|
-| _개발 시작 후 추가 예정_ | | |
+| 테스트에서 `@WithMockUser` 사용 시 typed `@AuthenticationPrincipal` NPE | 1 | `WithMockJwtUser` 커스텀 어노테이션 패턴 수립 |
 
 ---
 

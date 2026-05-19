@@ -1,7 +1,6 @@
 package ai.claudecode.esgt2.shared.security;
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.*;
 import org.springframework.stereotype.Component;
@@ -14,10 +13,18 @@ import java.util.List;
 import java.util.UUID;
 
 @Component
-@RequiredArgsConstructor
 public class JwtTokenProvider {
 
     private final JwtProperties jwtProperties;
+    private final SecretKey secretKey;
+    private final NimbusJwtDecoder jwtDecoder;
+
+    public JwtTokenProvider(JwtProperties jwtProperties) {
+        this.jwtProperties = jwtProperties;
+        byte[] keyBytes = jwtProperties.secret().getBytes(StandardCharsets.UTF_8);
+        this.secretKey = new SecretKeySpec(keyBytes, "HmacSHA256");
+        this.jwtDecoder = NimbusJwtDecoder.withSecretKey(this.secretKey).macAlgorithm(MacAlgorithm.HS256).build();
+    }
 
     public String generateAccessToken(UUID userId, UUID tenantId, List<String> roles) {
         return encode(userId, tenantId, roles, jwtProperties.accessTokenExpirySeconds());
@@ -28,11 +35,11 @@ public class JwtTokenProvider {
     }
 
     public Jwt decode(String token) {
-        return decoder().decode(token);
+        return jwtDecoder.decode(token);
     }
 
     NimbusJwtDecoder decoder() {
-        return NimbusJwtDecoder.withSecretKey(secretKey()).macAlgorithm(MacAlgorithm.HS256).build();
+        return jwtDecoder;
     }
 
     private String encode(UUID userId, UUID tenantId, List<String> roles, long expirySeconds) {
@@ -46,12 +53,7 @@ public class JwtTokenProvider {
             .build();
 
         var header = JwsHeader.with(MacAlgorithm.HS256).build();
-        var encoder = new NimbusJwtEncoder(new ImmutableSecret<>(secretKey()));
+        var encoder = new NimbusJwtEncoder(new ImmutableSecret<>(secretKey));
         return encoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
-    }
-
-    private SecretKey secretKey() {
-        byte[] keyBytes = jwtProperties.secret().getBytes(StandardCharsets.UTF_8);
-        return new SecretKeySpec(keyBytes, "HmacSHA256");
     }
 }

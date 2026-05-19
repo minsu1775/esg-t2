@@ -1,6 +1,7 @@
 package ai.claudecode.esgt2.entity.api;
 
 import ai.claudecode.esgt2.support.AbstractIntegrationTest;
+import ai.claudecode.esgt2.support.WithMockJwtUser;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,7 +51,7 @@ class EntityControllerSecurityTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = "TENANT_ADMIN")
+    @WithMockJwtUser(roles = {"TENANT_ADMIN"})
     void TENANT_ADMIN_역할로_법인_생성_시_403이_아니다() throws Exception {
         var result = mockMvc.perform(post("/api/v1/entities")
                 .contentType("application/json")

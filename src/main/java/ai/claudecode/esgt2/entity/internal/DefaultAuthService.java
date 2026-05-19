@@ -51,6 +51,7 @@ class DefaultAuthService implements AuthService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public TokenResponse refresh(String refreshToken) {
         if (isBlacklisted(refreshToken)) {
             throw new EsgException(EsgErrorCode.ACCESS_DENIED, "만료된 리프레시 토큰입니다.");

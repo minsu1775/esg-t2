@@ -269,6 +269,26 @@
 
 ---
 
+### L-P1-04: JwtTokenProvider — SecretKey와 JwtDecoder는 빈 생성 시점에 캐싱
+
+**현상**: `secretKey()` 메서드가 매 호출마다 `new SecretKeySpec(keyBytes, "HmacSHA256")`을 생성하고, `decoder()` 메서드도 매번 `NimbusJwtDecoder.withSecretKey(...).build()`를 호출. JWT 처리가 많은 서비스에서 불필요한 객체 생성과 GC 압력 발생.
+
+**교훈**: JWT 프로퍼티는 애플리케이션 시작 후 불변. `SecretKey`와 `NimbusJwtDecoder`를 생성자에서 한 번만 초기화하고 final 필드로 캐싱한다. `@RequiredArgsConstructor` 대신 명시적 생성자를 작성하여 초기화 로직을 표현한다.
+
+**esg-t2 적용**: `JwtTokenProvider(JwtProperties)` 명시적 생성자에서 `secretKey`, `jwtDecoder` 초기화. 이후 모든 `encode()`/`decode()` 호출은 캐시된 인스턴스 재사용.
+
+---
+
+### L-P1-05: `@WithMockUser` + typed `@AuthenticationPrincipal` — NPE 함정
+
+**현상**: `EntityControllerSecurityTest`에서 `@WithMockUser(roles = "TENANT_ADMIN")`를 사용하면, `@PreAuthorize("hasRole('TENANT_ADMIN')")`은 통과하지만 컨트롤러 바디에서 `@AuthenticationPrincipal JwtAuthentication auth`가 null로 주입된다(`UserDetails`와 타입 불일치). `auth.getTenantId()` 호출 시 NPE → 500 응답. 테스트는 `isNotEqualTo(403)`이라 통과하지만 의미 없는 성공.
+
+**교훈**: `@WithMockUser`는 `UserDetails` 기반이라 커스텀 Authentication 타입을 필요로 하는 컨트롤러에는 사용할 수 없다. `@WithSecurityContext`와 `WithSecurityContextFactory`를 이용해 `@WithMockJwtUser` 어노테이션을 만들면 JPA/Redis 없이 `JwtAuthentication`을 주입할 수 있다.
+
+**esg-t2 적용**: `support/WithMockJwtUser.java` + `WithMockJwtSecurityContextFactory.java` 생성. 컨트롤러 바디까지 진입하는 테스트는 `@WithMockJwtUser(roles = {"TENANT_ADMIN"})` 사용.
+
+---
+
 ## Phase 2: AuditLog & Hash Chain
 
 _Phase 완료 후 내용 추가 예정_

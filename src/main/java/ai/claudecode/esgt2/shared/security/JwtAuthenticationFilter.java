@@ -5,13 +5,16 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -40,7 +43,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             var authentication = new JwtAuthentication(userId, tenantId,
                 roles == null ? List.of() : roles);
             SecurityContextHolder.getContext().setAuthentication(authentication);
+        } catch (JwtException e) {
+            SecurityContextHolder.clearContext();
         } catch (Exception e) {
+            log.warn("JWT filter: unexpected error processing token", e);
             SecurityContextHolder.clearContext();
         }
 
