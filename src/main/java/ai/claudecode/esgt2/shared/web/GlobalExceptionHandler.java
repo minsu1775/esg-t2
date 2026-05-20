@@ -56,8 +56,9 @@ public class GlobalExceptionHandler {
         HttpStatus status = switch (e.getErrorCode()) {
             case RESOURCE_NOT_FOUND -> HttpStatus.NOT_FOUND;
             case ACCESS_DENIED -> HttpStatus.FORBIDDEN;
-            case VALIDATION_FAILED -> HttpStatus.BAD_REQUEST;
+            case VALIDATION_FAILED, CSV_PARSE_FAILED -> HttpStatus.BAD_REQUEST;
             case OPTIMISTIC_LOCK_CONFLICT -> HttpStatus.CONFLICT;
+            case WEBHOOK_SIGNATURE_INVALID -> HttpStatus.UNAUTHORIZED;
             default -> HttpStatus.INTERNAL_SERVER_ERROR;
         };
         return ResponseEntity.status(status)
