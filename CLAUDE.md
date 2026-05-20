@@ -97,6 +97,18 @@ ai.claudecode.esgt2
 3. 이슈 발견 → `docs/fix.md` 등록 → TDD로 해결
 4. 학습 인사이트 → `docs/insight.md` 누적
 
+### 구현 실행 방식 (Superpowers)
+
+- 계획 작성: `superpowers:writing-plans` 스킬 → `docs/superpowers/plans/YYYY-MM-DD-<feature>.md`
+- 실행: **인라인 실행(`superpowers:executing-plans`)** 고정 사용
+  - 서브에이전트 방식 금지 — 태스크 간 컨텍스트 연속성이 필수 (컴파일 오류·수정 이력 공유)
+- **과정 기록이 핵심**: 각 Phase의 설계 결정, 버그, 수정 흐름을 아래 문서에 빠짐없이 남긴다
+  - 설계 결정 → `docs/superpowers/specs/`
+  - 태스크 진행 → `docs/task.md` (완료 즉시 체크)
+  - 버그·수정 → `docs/fix.md`
+  - 코드 품질 이슈 → `docs/code-review.md`
+  - 교훈·인사이트 → `docs/insight.md`
+
 ---
 
 ## 문서 구조

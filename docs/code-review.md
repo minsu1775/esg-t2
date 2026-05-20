@@ -12,6 +12,7 @@
 - [ ] 서비스에서 `JpaEntity.builder()...build()` 직접 호출 없음 (도메인 팩토리만 허용)
 - [ ] 도메인 객체는 불변(record 또는 final 필드) 또는 명시적 변경 메서드만 존재
 - [ ] `DomainObject.create(cmd)` 팩토리 메서드에 유효성 검사 포함
+- [ ] `domain/` 패키지 파일에 Spring·JPA 임포트(`org.springframework.*`, `jakarta.persistence.*`) 없음 (BUG-P6-04)
 
 ### 1.2 @Auditable AOP
 
@@ -34,8 +35,10 @@
 
 - [ ] 사용자 입력 → SQL 쿼리에 PreparedStatement 사용 (문자열 연결 금지)
 - [ ] API 응답에 비밀번호·토큰·개인식별정보 노출 없음
-- [ ] 역할 기반 `@PreAuthorize` 적용 (인가 없는 엔드포인트 없음)
+- [ ] 역할 기반 `@PreAuthorize` 적용 (인가 없는 엔드포인트 없음; 면제 시 사유 주석 필수)
 - [ ] 크로스 테넌트 데이터 접근 방지: RLS 정책 + 애플리케이션 레벨 이중 방어
+- [ ] `permitAll` 경로 추가 시 `TenantContextInterceptor`에서 RLS 컨텍스트 설정 여부 확인 (BUG-P6-02)
+- [ ] 새 데이터 수집 서비스(CSV·Webhook 등): 서비스 진입 직후 `entityId` 테넌트 소속 검증 포함 (BUG-P6-03)
 
 ### 1.6 YAML 로더 (배출계수)
 
