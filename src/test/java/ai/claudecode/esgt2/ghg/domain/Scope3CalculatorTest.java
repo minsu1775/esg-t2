@@ -116,4 +116,62 @@ class Scope3CalculatorTest {
                 .isInstanceOf(IllegalArgumentException.class);
         }
     }
+
+    @Nested
+    class CoverageCalculator {
+
+        private final java.util.UUID TENANT_ID = java.util.UUID.randomUUID();
+        private final java.util.UUID ENTITY_ID = java.util.UUID.randomUUID();
+
+        @Test
+        void 포함_배출_비율_95_이상이면_threshold_충족() {
+            // Cat1=800, Cat2=150 → includedTotal=950, estimatedExcluded=50 → 95.00%
+            var included = java.util.Map.of(1, new BigDecimal("800"), 2, new BigDecimal("150"));
+            var excluded  = java.util.Map.of(4, new BigDecimal("50"));
+
+            Scope3CoverageReport report = Scope3CoverageCalculator.calculate(
+                TENANT_ID, ENTITY_ID, 2025,
+                included, excluded, java.util.Map.of(4, "중요성 낮음"));
+
+            assertThat(report.coveragePct()).isEqualByComparingTo(new BigDecimal("95.00"));
+            assertThat(report.meets95PctThreshold()).isTrue();
+            assertThat(report.includedCategories()).containsExactlyInAnyOrder(1, 2);
+            assertThat(report.excludedCategories()).containsExactlyInAnyOrder(4);
+        }
+
+        @Test
+        void 포함_배출_비율_95_미만이면_threshold_미달() {
+            // Cat1=700, estimatedExcluded Cat4=300 → 70.00%
+            var included = java.util.Map.of(1, new BigDecimal("700"));
+            var excluded  = java.util.Map.of(4, new BigDecimal("300"));
+
+            Scope3CoverageReport report = Scope3CoverageCalculator.calculate(
+                TENANT_ID, ENTITY_ID, 2025, included, excluded, java.util.Map.of());
+
+            assertThat(report.coveragePct()).isEqualByComparingTo(new BigDecimal("70.00"));
+            assertThat(report.meets95PctThreshold()).isFalse();
+        }
+
+        @Test
+        void 제외_추정치_없으면_100퍼센트_달성() {
+            var included = java.util.Map.of(1, new BigDecimal("500"), 2, new BigDecimal("200"));
+
+            Scope3CoverageReport report = Scope3CoverageCalculator.calculate(
+                TENANT_ID, ENTITY_ID, 2025,
+                included, java.util.Map.of(), java.util.Map.of());
+
+            assertThat(report.coveragePct()).isEqualByComparingTo(new BigDecimal("100.00"));
+            assertThat(report.meets95PctThreshold()).isTrue();
+        }
+
+        @Test
+        void 포함과_제외_모두_비어있으면_100퍼센트() {
+            Scope3CoverageReport report = Scope3CoverageCalculator.calculate(
+                TENANT_ID, ENTITY_ID, 2025,
+                java.util.Map.of(), java.util.Map.of(), java.util.Map.of());
+
+            assertThat(report.coveragePct()).isEqualByComparingTo(new BigDecimal("100.00"));
+            assertThat(report.meets95PctThreshold()).isTrue();
+        }
+    }
 }
