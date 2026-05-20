@@ -1,0 +1,21 @@
+source: "SPEND_BASED"
+reporting_year: 2025
+gwp_source: "IPCC_AR6"
+effective_from: "2025-01-01"
+effective_to: "2025-12-31"
+factors:
+  - category: "SCOPE3_CAT1"
+    sub_category: "ELECTRONICS"
+    country_code: "KR"
+    factor_value: "0.00050000"
+    unit: "tCO2e/KRW"
+  - category: "SCOPE3_CAT2"
+    sub_category: null
+    country_code: "KR"
+    factor_value: "0.00030000"
+    unit: "tCO2e/KRW"
+  - category: "SCOPE3_CAT11"
+    sub_category: "TV"
+    country_code: "KR"
+    factor_value: "0.50000000"
+    unit: "tCO2e/unit"

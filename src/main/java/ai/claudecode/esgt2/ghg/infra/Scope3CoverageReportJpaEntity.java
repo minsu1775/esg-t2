@@ -39,7 +39,7 @@ public class Scope3CoverageReportJpaEntity {
     @Column(nullable = false, precision = 5, scale = 2)
     private BigDecimal coveragePct;
 
-    @Column(nullable = false)
+    @Column(name = "meets_95pct_threshold", nullable = false)
     private boolean meets95PctThreshold;
 
     @Column(nullable = false)
