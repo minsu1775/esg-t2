@@ -8,6 +8,8 @@ import ai.claudecode.esgt2.ghg.domain.EmissionCalculator;
 import ai.claudecode.esgt2.ghg.domain.EmissionFactor;
 import ai.claudecode.esgt2.ghg.domain.EmissionFactorResolver;
 import ai.claudecode.esgt2.ghg.domain.EmissionRecord;
+import ai.claudecode.esgt2.ghg.domain.Scope3Cat1Calculator;
+import ai.claudecode.esgt2.ghg.domain.Scope3Cat2Calculator;
 import ai.claudecode.esgt2.ghg.domain.Scope3Cat11Calculator;
 import ai.claudecode.esgt2.ghg.domain.Scope3CoverageCalculator;
 import ai.claudecode.esgt2.ghg.domain.Scope3CoverageReport;
@@ -162,14 +164,18 @@ class DefaultScope3Service implements Scope3Service {
             var domain = EmissionRecord.calculate(
                 ad.getTenantId(), ad.getEntityId(), ad.getId(),
                 ad.getReportingYear(), "SCOPE3", scope3CategoryNum, "CO2E",
-                factor.id(), computeEmission(ad, factor));
+                factor.id(), computeEmission(ad, factor, scope3CategoryNum));
             var saved = emissionRecordRepository.save(EmissionRecordMapper.toEntity(domain));
             return toEmissionRecordResponse(saved);
         }).toList();
     }
 
-    private BigDecimal computeEmission(ActivityDataJpaEntity ad, EmissionFactor factor) {
-        return EmissionCalculator.computeEmission(ad.getQuantity(), factor.factorValue());
+    private BigDecimal computeEmission(ActivityDataJpaEntity ad, EmissionFactor factor, int scope3CategoryNum) {
+        return switch (scope3CategoryNum) {
+            case 1  -> Scope3Cat1Calculator.computeEmission(ad.getQuantity(), factor.factorValue());
+            case 2  -> Scope3Cat2Calculator.computeEmission(ad.getQuantity(), factor.factorValue());
+            default -> EmissionCalculator.computeEmission(ad.getQuantity(), factor.factorValue());
+        };
     }
 
     private EmissionRecordResponse toEmissionRecordResponse(EmissionRecordJpaEntity e) {

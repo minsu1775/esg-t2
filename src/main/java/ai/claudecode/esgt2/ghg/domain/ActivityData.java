@@ -31,13 +31,17 @@ public record ActivityData(
         } else if (stdUnit != null) {
             stdValue = cmd.quantity();
         }
+        String resolvedQuality = "SCOPE3_CAT1".equals(cmd.category())
+            ? Scope3Cat1Calculator.deriveDataQuality(cmd.dataSource())
+            : (cmd.dataQuality() != null ? cmd.dataQuality() : "AVERAGE_DATA");
+
         return new ActivityData(
             UUID.randomUUID(),
             cmd.tenantId(), cmd.entityId(),
             cmd.reportingYear(), cmd.category(), cmd.subCategory(),
             cmd.quantity(), cmd.unit(), cmd.countryCode(),
             cmd.dataSource() != null ? cmd.dataSource() : "MANUAL",
-            cmd.dataQuality() != null ? cmd.dataQuality() : "AVERAGE_DATA",
+            resolvedQuality,
             stdValue, stdUnit,
             cmd.lifetimeYears()
         );

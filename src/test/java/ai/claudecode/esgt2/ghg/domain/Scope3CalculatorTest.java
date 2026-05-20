@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -50,6 +51,47 @@ class Scope3CalculatorTest {
             assertThatThrownBy(() ->
                 Scope3Cat1Calculator.computeEmission(new BigDecimal("-1"), new BigDecimal("0.5")))
                 .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void SCOPE3_CAT1_활동데이터_생성시_데이터품질_자동_결정() {
+            // dataQuality=null이어도 SCOPE3_CAT1 카테고리면 SPEND_BASED로 자동 결정 (T-5-03)
+            var cmd = new CreateActivityDataCommand(
+                UUID.randomUUID(), UUID.randomUUID(),
+                2025, "SCOPE3_CAT1", "ELECTRONICS",
+                new BigDecimal("10000"), "KRW", "KR",
+                "MANUAL", null, null);
+
+            ActivityData data = ActivityData.create(cmd);
+
+            assertThat(data.dataQuality()).isEqualTo("SPEND_BASED");
+        }
+
+        @Test
+        void SCOPE3_CAT1_SUPPLIER_PORTAL_출처면_SUPPLIER_SPECIFIC_자동_결정() {
+            var cmd = new CreateActivityDataCommand(
+                UUID.randomUUID(), UUID.randomUUID(),
+                2025, "SCOPE3_CAT1", "ELECTRONICS",
+                new BigDecimal("10000"), "KRW", "KR",
+                "SUPPLIER_PORTAL", null, null);
+
+            ActivityData data = ActivityData.create(cmd);
+
+            assertThat(data.dataQuality()).isEqualTo("SUPPLIER_SPECIFIC");
+        }
+
+        @Test
+        void SCOPE3_CAT2는_dataQuality_자동_결정_안됨() {
+            // Cat.2는 deriveDataQuality 로직 미적용 → 기본값 AVERAGE_DATA
+            var cmd = new CreateActivityDataCommand(
+                UUID.randomUUID(), UUID.randomUUID(),
+                2025, "SCOPE3_CAT2", null,
+                new BigDecimal("500000"), "KRW", "KR",
+                "MANUAL", null, null);
+
+            ActivityData data = ActivityData.create(cmd);
+
+            assertThat(data.dataQuality()).isEqualTo("AVERAGE_DATA");
         }
     }
 

@@ -58,7 +58,26 @@ _버그 발생 시 추가 예정_
 
 ## Phase 5: Scope 3 계산
 
-_버그 발생 시 추가 예정_
+### T-5R-01 [P2 · FIXED] Cat.1 데이터 품질 자동 결정 미적용
+
+**증상**: `Scope3Cat1Calculator.deriveDataQuality()` 메서드가 단위 테스트에서만 검증되고, `ActivityData.create()` 흐름에서 호출되지 않음. Cat.1 활동 데이터 등록 시 `dataQuality`가 항상 `AVERAGE_DATA`(기본값)로 저장됨.  
+**원인**: T-5-03 구현 시 계산기 메서드는 작성됐으나 `ActivityData.create()` 내 카테고리 분기 로직 누락.  
+**수정**: `ActivityData.create()` — `"SCOPE3_CAT1"` 카테고리 감지 후 `Scope3Cat1Calculator.deriveDataQuality(dataSource)` 호출. 회귀 테스트 3건 추가.
+
+### T-5R-02 [P3 · FIXED] `Scope3CoverageRequest.@NotNull int` primitive 유효성 검사 무효
+
+**증상**: `@NotNull int reportingYear` — `int` primitive에 `@NotNull`은 컴파일만 되고 Bean Validation 런타임에 아무 효과 없음.  
+**수정**: `@NotNull` → `@Min(2020) @Max(2030)` 으로 교체.
+
+### T-5R-03 [P3 · FIXED] `Scope3CoverageCalculator` 카테고리 목록 순서 비결정적
+
+**증상**: `includedCategories`/`excludedCategories` 저장 시 `HashMap.keySet()` 순서가 JVM 실행마다 다를 수 있음. JSON `[2,1]` vs `[1,2]` 불일치로 재현성 저하.  
+**수정**: `.stream().sorted().toList()`로 오름차순 정렬 보장.
+
+### T-5R-04 [P3 · FIXED] `DefaultScope3Service` Cat.1/Cat.2 도메인 계산기 우회
+
+**증상**: `calculateScope3()` 내부에서 `Scope3Cat1/2Calculator.computeEmission()` 대신 `EmissionCalculator.computeEmission()` 직접 호출. 나중에 Cat.1/Cat.2 계산 로직이 바뀌면 서비스에 반영되지 않을 위험.  
+**수정**: `computeEmission(ad, factor, scope3CategoryNum)` 메서드 내 `switch`로 카테고리별 계산기 경유.
 
 ---
 

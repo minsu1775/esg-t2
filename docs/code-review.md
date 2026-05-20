@@ -402,6 +402,35 @@
 
 ---
 
+### Phase 5 재검토: 구현 흐름 전수 점검 (2026-05-20)
+
+> 관점: ① 비즈니스 로직 연결 완결성 ② 유효성 검사 정확성 ③ 도메인 아키텍처 일관성 ④ 재현성
+
+**① 비즈니스 로직 연결 완결성**
+
+| 심각도 | 항목 | 수정 내용 |
+|---|---|---|
+| **P2** | T-5-03 "Cat.1 데이터 품질 자동 부여" — `deriveDataQuality()` 단위 테스트만 통과, `ActivityData.create()` 경로에서 미호출. Cat.1 등록 시 항상 `AVERAGE_DATA` 저장 | `ActivityData.create()`: `"SCOPE3_CAT1"` 카테고리 감지 후 `Scope3Cat1Calculator.deriveDataQuality(dataSource)` 자동 적용. 회귀 단위 테스트 3건 추가 (T-5R-01) |
+| P3 | `DefaultScope3Service.calculateScope3()` — `Scope3Cat1/2Calculator.computeEmission()` 미경유, `EmissionCalculator` 직접 호출. 계산기 클래스 존재 목적 반감 | `computeEmission()` private 헬퍼를 `switch(scope3CategoryNum)`으로 교체, 카테고리별 계산기 경유 (T-5R-04) |
+
+**② 유효성 검사 정확성**
+
+| 심각도 | 항목 | 수정 내용 |
+|---|---|---|
+| P3 | `Scope3CoverageRequest.@NotNull int reportingYear` — primitive `int`에 `@NotNull` 효과 없음 (컴파일만 통과) | `@Min(2020) @Max(2030)` 으로 교체 (T-5R-02) |
+
+**③ 도메인 아키텍처 — 재현성**
+
+| 심각도 | 항목 | 수정 내용 |
+|---|---|---|
+| P3 | `Scope3CoverageCalculator`: `HashMap.keySet()` → `includedCategories` 순서 비결정적. JSON `[2,1]` vs `[1,2]` 불일치 | `.stream().sorted().toList()` 오름차순 정렬 보장 (T-5R-03) |
+
+**테스트 결과**: ✅ **BUILD SUCCESSFUL** (132 tests, 0 failures)
+- 신규 단위 테스트 3건 추가 (ActivityData Cat.1 데이터품질 자동 결정 × 3)
+- 전체 132건 통과, ModularityTest 통과
+
+---
+
 ## 3. 공통 이슈 트래킹
 
 > 같은 이슈가 3회 이상 반복되면 체크리스트에 항목 추가
