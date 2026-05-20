@@ -14,6 +14,7 @@ public final class EmissionRecordMapper {
             .activityDataId(domain.activityDataId())
             .reportingYear(domain.reportingYear())
             .scope(domain.scope())
+            .scope3Category(domain.scope3Category())
             .ghgType(domain.ghgType())
             .emissionFactorId(domain.emissionFactorId())
             .rawEmission(domain.rawEmission())

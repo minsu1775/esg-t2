@@ -32,6 +32,8 @@ public class EmissionRecordJpaEntity {
     @Column(nullable = false)
     private String scope;
 
+    private Integer scope3Category;   // Scope 3 카테고리 번호 (1~16), Scope 1/2는 null
+
     @Column(nullable = false)
     private String ghgType;
 
@@ -50,7 +52,8 @@ public class EmissionRecordJpaEntity {
     @Builder
     public EmissionRecordJpaEntity(UUID id, UUID tenantId, UUID entityId,
                                     UUID activityDataId, int reportingYear,
-                                    String scope, String ghgType,
+                                    String scope, Integer scope3Category,
+                                    String ghgType,
                                     UUID emissionFactorId, BigDecimal rawEmission) {
         this.id = id != null ? id : UUID.randomUUID();
         this.tenantId = tenantId;
@@ -58,6 +61,7 @@ public class EmissionRecordJpaEntity {
         this.activityDataId = activityDataId;
         this.reportingYear = reportingYear;
         this.scope = scope;
+        this.scope3Category = scope3Category;
         this.ghgType = ghgType != null ? ghgType : "CO2E";
         this.emissionFactorId = emissionFactorId;
         this.rawEmission = rawEmission;

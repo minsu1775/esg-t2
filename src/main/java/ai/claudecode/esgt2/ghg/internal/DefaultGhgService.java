@@ -82,8 +82,8 @@ class DefaultGhgService implements GhgService {
 
             var domain = EmissionRecord.calculate(
                 ad.getTenantId(), ad.getEntityId(), ad.getId(),
-                ad.getReportingYear(), scope, "CO2E",
-                factor.id(), emission);
+                ad.getReportingYear(), scope, null,  // scope3Category: Scope1/2는 null
+                "CO2E", factor.id(), emission);
             var saved = emissionRecordRepository.save(EmissionRecordMapper.toEntity(domain));
             return toEmissionRecordResponse(saved);
         }).toList();

@@ -52,6 +52,8 @@ public class ActivityDataJpaEntity {
     @Column(nullable = false)
     private String dataQuality;
 
+    private Integer lifetimeYears;   // Cat.11 전용 (nullable)
+
     @Column(nullable = false)
     private String status;
 
@@ -69,7 +71,8 @@ public class ActivityDataJpaEntity {
                                   int reportingYear, String category, String subCategory,
                                   BigDecimal quantity, String unit, String countryCode,
                                   BigDecimal standardValue, String standardUnit,
-                                  String dataSource, String dataQuality) {
+                                  String dataSource, String dataQuality,
+                                  Integer lifetimeYears) {
         this.id = id != null ? id : UUID.randomUUID();
         this.tenantId = tenantId;
         this.entityId = entityId;
@@ -83,6 +86,7 @@ public class ActivityDataJpaEntity {
         this.standardUnit = standardUnit;
         this.dataSource = dataSource != null ? dataSource : "MANUAL";
         this.dataQuality = dataQuality != null ? dataQuality : "AVERAGE_DATA";
+        this.lifetimeYears = lifetimeYears;
         this.status = "DRAFT";
         this.createdAt = Instant.now();
         this.updatedAt = Instant.now();
