@@ -12,4 +12,8 @@ public interface ActivityDataRepository extends JpaRepository<ActivityDataJpaEnt
 
     List<ActivityDataJpaEntity> findByTenantIdAndEntityIdAndReportingYearAndCategoryIn(
         UUID tenantId, UUID entityId, int reportingYear, List<String> categories);
+
+    boolean existsByTenantIdAndEntityIdAndReportingYearAndCategoryAndSubCategoryAndDataSource(
+        UUID tenantId, UUID entityId, int reportingYear,
+        String category, String subCategory, String dataSource);
 }
