@@ -2,17 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-> **선행 프로젝트**: `../esg-t1` — MVP Phase 0~12 완성본. esg-t2는 esg-t1의 아키텍처 교훈과 규제 업데이트(KSSB 1/2, 2026-02-26)를 반영한 2세대 프로젝트다.  
-> **문서 읽는 순서**: `docs/regulatory.md` → `docs/prd.md` → `docs/spec.md` → `docs/plan.md` → `docs/task.md` → `docs/superpowers/plans/` → 본 파일
-
----
-
 ## 프로젝트 개요
 
 ESG 공시지원 시스템 2세대. KSSB 1/2(한국판 IFRS S1/S2), Scope 3, 다법인 연결, 외부 검증 모드를 MVP에 포함한 엔터프라이즈 공시 플랫폼.
 
 - **Group**: `ai.claudecode` | **Artifact**: `esgt2` | **Base package**: `ai.claudecode.esgt2`
-- **초기 생성**: Spring Initializr (https://start.spring.io)으로 Gradle Wrapper(`gradlew`, `gradlew.bat`, `gradle/wrapper/`)만 생성. `build.gradle.kts`는 impl plan의 코드로 교체. Initializr 생성물을 그대로 쓰지 말 것.
 
 ---
 
@@ -42,8 +36,8 @@ ESG 공시지원 시스템 2세대. KSSB 1/2(한국판 IFRS S1/S2), Scope 3, 다
 ./gradlew build
 ./gradlew bootRun
 ./gradlew test
-./gradlew test --tests "ai.claudecode.esgt2.domain.DataPointTest"
-./gradlew test --tests "ai.claudecode.esgt2.domain.DataPointTest.정정시_새_버전이_추가된다"
+./gradlew test --tests "ai.claudecode.esgt2.ghg.domain.ConsolidationEngineTest"
+./gradlew test --tests "ai.claudecode.esgt2.ghg.domain.ConsolidationEngineTest.Equity_Method_3법인_연결_집계"
 ./gradlew test --tests "*ModularityTest"
 ./gradlew generateOpenApiDocs
 ./gradlew spotlessApply
@@ -92,6 +86,7 @@ ai.claudecode.esgt2
 | `09-scheduler.md` | zone=Asia/Seoul, @ConditionalOnProperty 격리 | `**/*Scheduler*.java` |
 | `10-evidence-files.md` | DigestInputStream, 경로 순회 방어, SHA-256 | `**/evidence/**` |
 | `11-modulith-events.md` | 모듈 경계, @Auditable 적용 범위, @ApplicationModuleListener | `**/ghg/**`, `**/entity/**`, `**/audit/**`, `**/vw/**`, `**/rpt/**`, `**/supply/**` |
+| `12-change-principles.md` | 변경·추가 전 검토 원칙 — 의존성·파일·설정·오류 수정 시 확인 우선 | 항상 |
 
 ---
 
@@ -101,22 +96,6 @@ ai.claudecode.esgt2
 2. Phase 종료 시 `docs/code-review.md` 리뷰 기록
 3. 이슈 발견 → `docs/fix.md` 등록 → TDD로 해결
 4. 학습 인사이트 → `docs/insight.md` 누적
-
-### 변경·추가 전 검토 원칙 (필수)
-
-새로운 요소를 추가하거나 기존 요소를 변경하기 **전에** 반드시 다음을 수행한다.
-
-- **의존성 추가**: 이미 전이 의존성으로 존재하는지 먼저 확인 (`./gradlew dependencies` 또는 BOM 확인). 중복 추가 금지.
-- **파일·클래스 추가**: 동일 역할이 이미 존재하는지 `Glob`·`Grep`으로 확인 후 진행.
-- **설정 변경**: 변경 전 현재 상태를 Read로 읽고, 변경 후 효과를 예측한 다음 적용.
-- **오류 수정**: 원인을 직접 확인(로그, 소스 코드, 타입 정보)한 뒤 수정. 추론으로 수정하지 않는다.
-
-"아마 이럴 것이다"로 변경을 적용하지 않는다. 확인 후 최선의 선택을 한 근거를 갖고 진행한다.
-
-### esg-t1 참고 원칙
-
-> **esg-t1은 참고일 뿐이다.** 문제가 발생하면 esg-t1 코드를 그대로 복사하지 말고, 더 나은 방법을 찾아 접근한다.  
-> esg-t1의 교훈(L-0-01~L-0-16)은 `docs/insight.md`에 정리되어 있으며, 같은 실수를 반복하지 않기 위한 참조용이다. esg-t2는 독립적인 2세대 프로젝트로, esg-t1 방식이 최선이 아닐 수 있다.
 
 ---
 
