@@ -223,33 +223,33 @@
 
 | ID | 태스크 | 상태 | 비고 |
 |---|---|---|---|
-| T-5-01 | `test:` Cat.1 지출 기반 계산 정확도 | TODO | |
-| T-5-02 | `feat:` Scope3Cat1Calculator | TODO | 지출 × 지출기반계수 |
-| T-5-03 | `feat:` 데이터 품질 점수 자동 부여 | TODO | SPEND_BASED/AVERAGE_DATA/SUPPLIER_SPECIFIC |
+| T-5-01 | `test:` Cat.1 지출 기반 계산 정확도 | DONE | |
+| T-5-02 | `feat:` Scope3Cat1Calculator | DONE | 지출 × 지출기반계수 |
+| T-5-03 | `feat:` 데이터 품질 점수 자동 부여 | DONE | SPEND_BASED/AVERAGE_DATA/SUPPLIER_SPECIFIC |
 
 ### Cat.2 — 자본재
 
 | ID | 태스크 | 상태 | 비고 |
 |---|---|---|---|
-| T-5-04 | `test:` Cat.2 자본재 취득액 → CO2e | TODO | |
-| T-5-05 | `feat:` Scope3Cat2Calculator | TODO | |
+| T-5-04 | `test:` Cat.2 자본재 취득액 → CO2e | DONE | |
+| T-5-05 | `feat:` Scope3Cat2Calculator | DONE | |
 
 ### Cat.11 — 판매제품 사용
 
 | ID | 태스크 | 상태 | 비고 |
 |---|---|---|---|
-| T-5-06 | `test:` Cat.11 다년도 배출 현재연도 귀속 | TODO | |
-| T-5-07 | `feat:` Scope3Cat11Calculator | TODO | 판매량 × 계수 × 사용기간 |
+| T-5-06 | `test:` Cat.11 다년도 배출 현재연도 귀속 | DONE | |
+| T-5-07 | `feat:` Scope3Cat11Calculator | DONE | 판매량 × 계수 × 사용기간 |
 
 ### Scope 3 Coverage Report
 
 | ID | 태스크 | 상태 | 비고 |
 |---|---|---|---|
-| T-5-08 | V11__scope3_tables.sql | TODO | scope3_coverage_reports |
-| T-5-09 | `test:` 95% 임계값 판단 정확도 | TODO | |
-| T-5-10 | `feat:` Scope3CoverageCalculator | TODO | |
-| T-5-11 | `feat:` GET /api/v1/ghg/scope3-coverage-report | TODO | |
-| T-5-12 | `feat:` Category 16 DB 스키마 준비 (계산 미구현) | TODO | scope3_category CHECK 1~16 |
+| T-5-08 | V18__scope3_tables.sql | DONE | scope3_coverage_reports + scope3_category CHECK 1~16 |
+| T-5-09 | `test:` 95% 임계값 판단 정확도 | DONE | |
+| T-5-10 | `feat:` Scope3CoverageCalculator | DONE | |
+| T-5-11 | `feat:` Scope3Service + GhgController 5개 엔드포인트 | DONE | POST cat1/2/11/coverage-report, GET coverage-report |
+| T-5-12 | `feat:` Category 16 DB 스키마 준비 (계산 미구현) | DONE | scope3_category CHECK 1~16 |
 
 ---
 

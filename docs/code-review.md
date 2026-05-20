@@ -350,6 +350,58 @@
 
 ---
 
+### Phase 5: Scope 3 계산 엔진 리뷰 (2026-05-20)
+
+> 구현 범위: Cat.1(지출기반), Cat.2(자본재), Cat.11(판매제품 사용), Scope3CoverageCalculator, V18 마이그레이션, Scope3Service + GhgController 5개 엔드포인트
+
+**① 비즈니스 로직 — GHG Protocol 정확성**
+
+| 심각도 | 항목 | 수정 내용 |
+|---|---|---|
+| OK | Cat.1 `spendAmount × factorValue` 정확도 | `EmissionCalculator.computeEmission()` 공유 — BigDecimal HALF_UP scale 6 유지 |
+| OK | Cat.11 생애주기 귀속 `(q × ef) / lifetimeYears` | `Scope3Cat11Calculator.computeAnnualEmission()`: lifetimeYears null·0 이하 시 `IllegalArgumentException` |
+| OK | 95% 임계값 계산 `included/(included+excluded) ≥ 0.95` | `Scope3CoverageCalculator`: totalEstimated=0 시 100% 처리, 제외 카테고리 사유 필수 |
+
+**② 보안 — 크로스 테넌트 방어**
+
+| 심각도 | 항목 | 상태 |
+|---|---|---|
+| P0 | `DefaultScope3Service` 모든 조회에 `tenantId` 파라미터 전달 → JPA WHERE절 필터 | ✅ 적용됨 |
+| P0 | `scope3_coverage_reports` RLS 정책 (PostgreSQL 전용 V18) | ✅ `migration-pg/V18__scope3_rls.sql` |
+
+**③ 인프라 — 컬럼 매핑 이슈**
+
+| 심각도 | 항목 | 수정 내용 |
+|---|---|---|
+| **P2** | `meets95PctThreshold` → Hibernate 변환 `meets95_pct_threshold` vs DB 컬럼 `meets_95pct_threshold` 불일치 | `@Column(name = "meets_95pct_threshold")` 명시적 매핑 추가 |
+
+**④ 테스트 격리 이슈**
+
+| 심각도 | 항목 | 수정 내용 |
+|---|---|---|
+| P2 | `@BeforeEach`의 `DELETE FROM emission_factors` — 다른 테스트 클래스의 `emission_records` FK 참조로 인한 PSQLException | `DELETE FROM emission_factors` 제거, `loadFile()` upsert 방식으로 전환. SCOPE3 카테고리는 다른 테스트 YAML과 category 겹침 없음 |
+| P2 | `@Auditable` AOP — `SecurityContextHolder`에 `JwtAuthentication` 없으면 outbox 이벤트 미생성 | `@BeforeEach`에 `SecurityContextHolder.getContext().setAuthentication(new JwtAuthentication(...))` 추가 |
+
+**⑤ API 설계 — 타입 오류**
+
+| 심각도 | 항목 | 수정 내용 |
+|---|---|---|
+| P3 | `CreateEntityRequest` 생성자 — `LegalEntityType` 파라미터에 `.name()` String 전달 | 통합 테스트에서 `LegalEntityType.PARENT` enum 직접 전달로 수정 |
+| P3 | `EntityManagementService.createEntity()` 메서드명 불일치 — 실제는 `create()` | 통합 테스트에서 `create(tenantId, request)` 2인자 시그니처로 수정 |
+
+**⑥ 감사 컬럼명 확인**
+
+| 심각도 | 항목 | 상태 |
+|---|---|---|
+| P3 | `audit_logs` 컬럼은 `event_type` (plan 예시에서 `action`으로 잘못 참조) | 통합 테스트 SQL 쿼리 `WHERE event_type = '...'`로 수정 |
+
+**테스트 결과**: ✅ **BUILD SUCCESSFUL** (129 tests, 0 failures)
+- 도메인 단위 테스트 17건 (Scope3CalculatorTest: Cat1×6, Cat2×2, Cat11×5, Coverage×4)
+- 통합 테스트 5건 (Scope3IntegrationTest: Cat1/Cat2/Cat11 + 커버리지 생성·미달)
+- ModularityTest 통과
+
+---
+
 ## 3. 공통 이슈 트래킹
 
 > 같은 이슈가 3회 이상 반복되면 체크리스트에 항목 추가
@@ -369,7 +421,7 @@
 | Phase 2 | @Auditable AOP 커버리지, Hash Chain PESSIMISTIC_WRITE, Canonical JSON 단일 직렬화 경로 |
 | Phase 3 | YAML 로더 멱등성, 배출계수 계산 `BigDecimal` 전용(float/double 금지), `reporting_year` SQL 예약어 방지, `factorAt` 재현성 테스트 |
 | Phase 4 | Operational Control GHG Protocol 준수 (직접 지배 체인), 크로스 테넌트 rootEntityId 검증, N+1 쿼리 |
-| Phase 5 | Scope 3 95% 임계값 계산 로직, 데이터 품질 점수 |
+| Phase 5 | ✅ Scope 3 95% 임계값 계산 로직, meets_95pct_threshold 컬럼 매핑, 테스트 격리(@BeforeEach FK), AuditAspect JWT 컨텍스트 |
 | Phase 6 | 공급업체 데이터 격리, Webhook 시그니처 검증 |
 | Phase 7 | KSSB 2 항목 완전성 (미구현 항목 없음), YoY 계산 |
 | Phase 8 | 스냅샷 불변성, VERIFIER RLS 격리 |
