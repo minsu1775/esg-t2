@@ -52,6 +52,10 @@ jwt:
   access-token-expiry-seconds: 900
   refresh-token-expiry-seconds: 604800
 
+intake:
+  webhook:
+    hmac-secret: ${INTAKE_WEBHOOK_HMAC_SECRET:dev-webhook-secret-must-change-in-prod}
+
 logging:
   level:
     ai.claudecode.esgt2: DEBUG
