@@ -257,21 +257,21 @@
 
 | ID | 태스크 | 상태 | 비고 |
 |---|---|---|---|
-| T-6-01 | `test:` CSV 100행 업로드 멱등성 | TODO | |
-| T-6-02 | `feat:` CSV 파싱 + 유효성 검사 + item-level 중복 방지 | TODO | |
-| T-6-03 | `feat:` 오류 행 리포트 API 응답 | TODO | |
-| T-6-04 | `feat:` Webhook 수신 엔드포인트 (POST /api/v1/intake/webhook) | TODO | HMAC-SHA256 시그니처 검증 |
-| T-6-05 | `test:` Webhook 시그니처 검증 실패 → 401 | TODO | |
-| T-6-06 | `feat:` 데이터 정규화 파이프라인 (ERP → ActivityData) | TODO | |
-| T-6-07 | `feat:` SUPPLIER 계정 초대 + 이메일 발송 | TODO | |
-| T-6-08 | `feat:` POST /api/v1/supplier/activity-data (자사 데이터만) | TODO | RLS 강제 |
-| T-6-09 | `test:` 공급업체 → 타사 데이터 접근 시도 → 403 | TODO | |
-| T-6-10 | `feat:` 공급업체 제출 → ESG_MANAGER 승인 워크플로우 | TODO | |
-| T-6-11 | `feat:` 미제출 법인 자동 리마인더 스케줄러 | TODO | |
-| T-6-12 | **[예방]** `test:` CSV 중간 행 오류 시 이전 행 보존 확인 (`REQUIRES_NEW` 트랜잭션) | TODO | esg-t1 Phase 3 교훈 |
-| T-6-13 | **[예방]** `test:` 중복 항목 재업로드 → WARN 로그 + 계속 처리 (ERROR 없음) | TODO | |
-| T-6-14 | **[예방]** `feat:` CSV 업로드 행별 독립 `@Transactional(REQUIRES_NEW)` 적용 | TODO | |
-| T-6-15 | **[예방]** `test:` `@Async` 메서드에서 `@Transactional` 없음 확인 (별도 빈 분리) | TODO | esg-t1 Phase 8 교훈 |
+| T-6-01 | `test:` CSV 100행 업로드 멱등성 | DONE | 재업로드 시 100건 SKIPPED 검증 |
+| T-6-02 | `feat:` CSV 파싱 + 유효성 검사 + item-level 중복 방지 | DONE | CsvActivityDataParser + ActivityDataRowImporter |
+| T-6-03 | `feat:` 오류 행 리포트 API 응답 | DONE | CsvUploadResponse.nonSuccessRows |
+| T-6-04 | `feat:` Webhook 수신 엔드포인트 (POST /api/v1/intake/tenants/{id}/webhook) | DONE | HMAC-SHA256 IntakeController |
+| T-6-05 | `test:` Webhook 시그니처 검증 실패 → 401 | DONE | |
+| T-6-06 | `feat:` 데이터 정규화 파이프라인 (ERP → ActivityData) | DONE | WebhookActivityDataItem → CsvRow → ActivityData |
+| T-6-07 | `feat:` SUPPLIER 계정 초대 + 이메일 발송 | TODO | Phase 6B-supply |
+| T-6-08 | `feat:` POST /api/v1/supplier/activity-data (자사 데이터만) | TODO | Phase 6B-supply |
+| T-6-09 | `test:` 공급업체 → 타사 데이터 접근 시도 → 403 | TODO | Phase 6B-supply |
+| T-6-10 | `feat:` 공급업체 제출 → ESG_MANAGER 승인 워크플로우 | TODO | Phase 6B-supply |
+| T-6-11 | `feat:` 미제출 법인 자동 리마인더 스케줄러 | TODO | Phase 6B-supply |
+| T-6-12 | **[예방]** `test:` CSV 중간 행 오류 시 이전 행 보존 확인 (`REQUIRES_NEW` 트랜잭션) | DONE | |
+| T-6-13 | **[예방]** `test:` 중복 항목 재업로드 → WARN 로그 + 계속 처리 (ERROR 없음) | DONE | |
+| T-6-14 | **[예방]** `feat:` CSV 업로드 행별 독립 `@Transactional(REQUIRES_NEW)` 적용 | DONE | ActivityDataRowImporter |
+| T-6-15 | **[예방]** `test:` `@Async` 메서드에서 `@Transactional` 없음 확인 (별도 빈 분리) | DONE | ClassPathScanningCandidateComponentProvider 사용 |
 
 ---
 

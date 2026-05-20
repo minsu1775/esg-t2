@@ -431,6 +431,47 @@
 
 ---
 
+### Phase 6A: CSV 업로드 + Webhook 데이터 수집 파이프라인 리뷰 (2026-05-20)
+
+> 구현 범위: T-6-01~06, T-6-12~15 / IntakeController + DefaultIntakeService + ActivityDataRowImporter + CsvActivityDataParser
+
+**① 트랜잭션 설계 — REQUIRES_NEW 행별 격리**
+
+| 심각도 | 항목 | 내용 |
+|---|---|---|
+| - | `DefaultIntakeService` — `@Transactional` + `@Auditable` 외부 트랜잭션 보유 | `@Auditable` AOP가 outbox 이벤트를 커밋하기 위해 외부 트랜잭션이 필요. `uploadCsv()` / `receiveWebhook()` 모두 `@Transactional` 유지. 행별 처리는 `ActivityDataRowImporter`의 `REQUIRES_NEW`에 위임 — 2계층 트랜잭션 구조 의도적 설계 |
+| - | `ActivityDataRowImporter.importRow()` — `Propagation.REQUIRES_NEW` | 중간 행 오류가 전체 롤백을 유발하지 않음. 성공한 행은 즉시 커밋되어 재업로드 시 중복으로 감지 |
+
+**② 보안 — Webhook HMAC-SHA256 검증**
+
+| 심각도 | 항목 | 내용 |
+|---|---|---|
+| - | `IntakeController.isValidSignature()` — `MessageDigest.isEqual()` 상수 시간 비교 사용 | 타이밍 공격 방지. `String.equals()` 사용 금지 원칙 준수 |
+| - | Webhook 경로 `permitAll` + system actor SecurityContext 주입 | JWT 없는 Webhook에도 `@Auditable` 감사 로그 기록 가능. `SYSTEM_WEBHOOK_ACTOR = 00000000-...0099` well-known ID 사용 |
+| - | `/api/v1/intake/tenants/*/webhook` — Spring Security `permitAll` 등록 | HMAC이 인증 역할을 대체하므로 JWT 필터 우회 필요 |
+
+**③ 구현 중 발견·수정 사항**
+
+| 심각도 | 항목 | 수정 내용 |
+|---|---|---|
+| P2 | `TestRestTemplate` Spring Boot 4에서 제거 | 표준 `RestTemplate` + `DefaultResponseErrorHandler` 비활성화로 대체. 4xx 응답을 예외 없이 `ResponseEntity`로 수신 |
+| P3 | `GlobalExceptionHandler` — `WEBHOOK_SIGNATURE_INVALID` 코드가 `default → 500`으로 빠짐 | `case WEBHOOK_SIGNATURE_INVALID -> HttpStatus.UNAUTHORIZED` 추가. `CSV_PARSE_FAILED → BAD_REQUEST` 함께 추가 |
+
+**④ 아키텍처 테스트**
+
+| 항목 | 결과 |
+|---|---|
+| `@Async` + `@Transactional` 동시 부착 방지 (`AsyncTransactionalArchTest`) | ✅ PASS — `ClassPathScanningCandidateComponentProvider` 사용, 외부 라이브러리 불필요 |
+| Spring Modulith `ModularityTest` | ✅ PASS |
+
+**테스트 결과**: ✅ **BUILD SUCCESSFUL** (전체 테스트 통과)
+- 신규 단위 테스트: `CsvActivityDataParserTest` 6건
+- 신규 통합 테스트: `IntakeIntegrationTest` 6건 (CSV 100행 멱등성, REQUIRES_NEW 격리, 중복 WARN, Webhook HMAC 검증)
+- 신규 아키텍처 테스트: `AsyncTransactionalArchTest` 1건
+- ModularityTest 통과
+
+---
+
 ## 3. 공통 이슈 트래킹
 
 > 같은 이슈가 3회 이상 반복되면 체크리스트에 항목 추가
