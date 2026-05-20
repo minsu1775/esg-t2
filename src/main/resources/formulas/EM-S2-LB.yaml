@@ -1,0 +1,18 @@
+formula:
+  code: EM-S2-LB
+  version: "1.0"
+  description: Scope 2 전력 소비 location-based 배출량 산출
+  inputs:
+    - var: quantity
+      unit: MWh
+    - var: ef
+      lookup: emission_factor
+      key: SCOPE2_ELECTRICITY
+      gwp: AR6
+  expression: "quantity * ef"
+  output_unit: tCO2e
+  test_cases:
+    - inputs: {quantity: 1000.0, ef: 0.4156}
+      expected: 415.6
+    - inputs: {quantity: 0.0, ef: 0.4156}
+      expected: 0.0

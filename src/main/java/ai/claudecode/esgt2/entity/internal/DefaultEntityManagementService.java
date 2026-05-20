@@ -11,8 +11,10 @@ import ai.claudecode.esgt2.entity.domain.EntityRelationship;
 import ai.claudecode.esgt2.entity.domain.EntityRelationshipGraph;
 import ai.claudecode.esgt2.entity.domain.LegalEntity;
 import ai.claudecode.esgt2.entity.infra.EntityRelationshipJpaEntity;
+import ai.claudecode.esgt2.entity.infra.EntityRelationshipMapper;
 import ai.claudecode.esgt2.entity.infra.EntityRelationshipRepository;
 import ai.claudecode.esgt2.entity.infra.LegalEntityJpaEntity;
+import ai.claudecode.esgt2.entity.infra.LegalEntityMapper;
 import ai.claudecode.esgt2.entity.infra.LegalEntityRepository;
 import ai.claudecode.esgt2.shared.audit.Auditable;
 import ai.claudecode.esgt2.shared.exception.EsgErrorCode;
@@ -39,14 +41,7 @@ class DefaultEntityManagementService implements EntityManagementService {
             request.countryCode(), request.entityType());
         LegalEntity domain = LegalEntity.create(cmd);
 
-        var jpaEntity = LegalEntityJpaEntity.builder()
-            .tenantId(domain.tenantId())
-            .name(domain.name())
-            .countryCode(domain.countryCode())
-            .entityType(domain.entityType())
-            .build();
-
-        var saved = legalEntityRepository.save(jpaEntity);
+        var saved = legalEntityRepository.save(LegalEntityMapper.toEntity(domain));
         return toEntityResponse(saved);
     }
 
@@ -89,17 +84,7 @@ class DefaultEntityManagementService implements EntityManagementService {
         newRelList.add(domain);
         EntityRelationshipGraph.of(newRelList);
 
-        var jpaEntity = EntityRelationshipJpaEntity.builder()
-            .tenantId(domain.tenantId())
-            .parentId(domain.parentId())
-            .childId(domain.childId())
-            .ownershipRatio(domain.ownershipRatio())
-            .method(domain.method())
-            .effectiveFrom(domain.effectiveFrom())
-            .effectiveTo(domain.effectiveTo())
-            .build();
-
-        var saved = relationshipRepository.save(jpaEntity);
+        var saved = relationshipRepository.save(EntityRelationshipMapper.toEntity(domain));
         return toRelResponse(saved);
     }
 

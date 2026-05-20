@@ -68,6 +68,7 @@ public class ActivityDataJpaEntity {
     public ActivityDataJpaEntity(UUID id, UUID tenantId, UUID entityId,
                                   int reportingYear, String category, String subCategory,
                                   BigDecimal quantity, String unit, String countryCode,
+                                  BigDecimal standardValue, String standardUnit,
                                   String dataSource, String dataQuality) {
         this.id = id != null ? id : UUID.randomUUID();
         this.tenantId = tenantId;
@@ -78,6 +79,8 @@ public class ActivityDataJpaEntity {
         this.quantity = quantity;
         this.unit = unit;
         this.countryCode = countryCode;
+        this.standardValue = standardValue;
+        this.standardUnit = standardUnit;
         this.dataSource = dataSource != null ? dataSource : "MANUAL";
         this.dataQuality = dataQuality != null ? dataQuality : "AVERAGE_DATA";
         this.status = "DRAFT";

@@ -1,0 +1,20 @@
+formula:
+  code: EM-S1-FUEL
+  version: "1.0"
+  description: Scope 1 연료 연소 배출량 산출 (GHG Protocol)
+  inputs:
+    - var: quantity
+      unit: kL
+    - var: ef
+      lookup: emission_factor
+      key: SCOPE1_FUEL
+      gwp: AR6
+  expression: "quantity * ef"
+  output_unit: tCO2e
+  test_cases:
+    - inputs: {quantity: 100.0, ef: 2.596}
+      expected: 259.6
+    - inputs: {quantity: 0.0, ef: 2.596}
+      expected: 0.0
+    - inputs: {quantity: 50.0, ef: 2.200}
+      expected: 110.0

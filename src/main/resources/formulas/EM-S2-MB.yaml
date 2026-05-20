@@ -1,0 +1,20 @@
+formula:
+  code: EM-S2-MB
+  version: "1.0"
+  description: Scope 2 전력 소비 market-based 배출량 산출 (RE 인증서 차감)
+  inputs:
+    - var: total_consumption
+      unit: MWh
+    - var: re_certificate
+      unit: MWh
+    - var: ef
+      lookup: emission_factor
+      key: SCOPE2_ELECTRICITY
+      gwp: AR6
+  expression: "(total_consumption - re_certificate) * ef"
+  output_unit: tCO2e
+  test_cases:
+    - inputs: {total_consumption: 200.0, re_certificate: 50.0, ef: 0.4156}
+      expected: 62.34
+    - inputs: {total_consumption: 100.0, re_certificate: 100.0, ef: 0.4156}
+      expected: 0.0

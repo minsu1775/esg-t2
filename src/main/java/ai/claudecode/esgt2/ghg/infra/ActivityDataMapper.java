@@ -19,6 +19,8 @@ public final class ActivityDataMapper {
             .countryCode(domain.countryCode())
             .dataSource(domain.dataSource())
             .dataQuality(domain.dataQuality())
+            .standardValue(domain.standardValue())
+            .standardUnit(domain.standardUnit())
             .build();
     }
 }

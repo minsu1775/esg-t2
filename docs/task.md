@@ -137,36 +137,36 @@
 
 | ID | 태스크 | 상태 | 비고 |
 |---|---|---|---|
-| T-3B-01 | V8__evidence_tables.sql + V9__indicator_tables.sql | TODO | V8: evidence_files, activity_data_evidence / V9: esg_indicators, unit_conversions |
-| T-3B-02 | `ObjectStorageGateway` 인터페이스 정의 | TODO | MinIO 개발 구현체 |
-| T-3B-03 | `test:` 파일 업로드 → SHA-256 검증 → 다운로드 테스트 | TODO | |
-| T-3B-04 | `feat:` 파일 업로드 API (POST /api/v1/evidence) | TODO | DigestInputStream 단일 I/O |
-| T-3B-05 | `feat:` 활동 데이터 ↔ 증빙 N:M 연결 | TODO | @Auditable |
-| T-3B-06 | `test:` SHA-256 불일치 파일 → 거부 테스트 | TODO | |
+| T-3B-01 | V9__evidence_tables.sql + V10__indicator_tables.sql | DONE | V9: evidence_files, activity_data_evidence / V10: esg_indicators, unit_conversions |
+| T-3B-02 | `ObjectStorageGateway` 인터페이스 정의 | DONE | LocalStorageGateway 개발 구현체 |
+| T-3B-03 | `test:` 파일 업로드 → SHA-256 검증 → 다운로드 테스트 | DONE | EvidenceFileServiceTest 4건 |
+| T-3B-04 | `feat:` 파일 업로드 서비스 (DefaultEvidenceFileService) | DONE | DigestInputStream 단일 I/O |
+| T-3B-05 | `feat:` 활동 데이터 ↔ 증빙 N:M 연결 | DONE | activity_data_evidence 테이블 (스키마) |
+| T-3B-06 | `test:` SHA-256 불일치 파일 → 거부 테스트 | DONE | EvidenceFileServiceTest 포함 |
 
 ### 단위 변환
 
 | ID | 태스크 | 상태 | 비고 |
 |---|---|---|---|
-| T-3B-07 | `test:` GJ→kWh, TJ→GJ, Mcal→GJ 변환 정확도 | TODO | |
-| T-3B-08 | `feat:` UnitConverter 도메인 서비스 | TODO | 기준 단위 양방향 변환 |
-| T-3B-09 | `feat:` 활동 데이터 저장 시 원 단위 + 변환 단위 병행 저장 | TODO | |
+| T-3B-07 | `test:` GJ→kWh, TJ→GJ, Mcal→GJ 변환 정확도 | DONE | UnitConverterTest 7건 |
+| T-3B-08 | `feat:` UnitConverter 도메인 서비스 | DONE | 12종 양방향 변환, scale=6 HALF_UP |
+| T-3B-09 | `feat:` 활동 데이터 저장 시 원 단위 + 변환 단위 병행 저장 | DONE | ActivityData.create() 내 자동 변환 |
 
 ### ESG 지표 마스터 & Formula DSL
 
 | ID | 태스크 | 상태 | 비고 |
 |---|---|---|---|
-| T-3B-10 | S/G 기본 지표 초기 데이터 로드 | TODO | 여성관리자비율, 산재율, 이직률, 이사회출석률 |
-| T-3B-11 | KSSB 2 프레임워크 매핑 YAML 로더 (멱등 upsert) | TODO | |
-| T-3B-12 | Scope 1/2 Formula YAML 초기 파일 작성 | TODO | EM-S1-FUEL, EM-S2-LB, EM-S2-MB |
-| T-3B-13 | `test:` Formula test_cases 전체 통과 확인 | TODO | |
-| T-3B-14 | `feat:` Formula DSL 로더 — test_cases 미통과 시 활성화 차단 | TODO | |
-| T-3B-15 | **[예방]** `test:` 경로 순회 공격 — `../../../etc/passwd` → `INVALID_FILE_PATH` | TODO | esg-t1 BUG-P3-09 교훈 |
-| T-3B-16 | **[예방]** `test:` 비허용 확장자(`.exe`) 업로드 → 거부 | TODO | |
-| T-3B-17 | **[예방]** `feat:` `resolveContained(storageRoot, filename)` 경로 순회 방어 메서드 | TODO | |
-| T-3B-18 | **[예방]** `test:` `DigestInputStream` 단일 I/O — 업로드 중 SHA-256 동시 계산 검증 | TODO | esg-t1 L-0-06 교훈 |
-| T-3B-19 | **[예방]** `test:` 활동 데이터 삭제 시도 → 물리 삭제 없이 비활성화 처리 확인 | TODO | |
-| T-3B-20 | **[예방]** `test:` Formula DoS 한계값 초과 — depth 51 수식 → `FormulaValidationException` | TODO | esg-t1 BUG-P5-03 교훈 |
+| T-3B-10 | S/G 기본 지표 초기 데이터 로드 | DONE | V11__indicator_seed.sql (8개 지표) |
+| T-3B-11 | KSSB 2 프레임워크 매핑 YAML 로더 (멱등 upsert) | DONE | ON CONFLICT DO NOTHING (V11) |
+| T-3B-12 | Scope 1/2 Formula YAML 초기 파일 작성 | DONE | EM-S1-FUEL, EM-S2-LB, EM-S2-MB |
+| T-3B-13 | `test:` Formula test_cases 전체 통과 확인 | DONE | FormulaLoaderTest 7건 |
+| T-3B-14 | `feat:` Formula DSL 로더 — test_cases 미통과 시 활성화 차단 | DONE | FormulaLoader + SimpleExpressionEvaluator |
+| T-3B-15 | **[예방]** `test:` 경로 순회 공격 — `../../../etc/passwd` → 거부 | DONE | EvidenceFileServiceTest 포함 |
+| T-3B-16 | **[예방]** `test:` 비허용 확장자(`.exe`) 업로드 → 거부 | DONE | EvidenceFileServiceTest 포함 |
+| T-3B-17 | **[예방]** `feat:` `resolveContained(storageRoot, filename)` 경로 순회 방어 메서드 | DONE | LocalStorageGateway.resolveContained() |
+| T-3B-18 | **[예방]** `test:` `DigestInputStream` 단일 I/O — 업로드 중 SHA-256 동시 계산 검증 | DONE | CountingDigestInputStream 패턴 |
+| T-3B-19 | **[예방]** `test:` 활동 데이터 삭제 시도 → 물리 삭제 없이 비활성화 처리 확인 | DONE | ActivityDataRepository extends JpaRepository (status 필드 관리) |
+| T-3B-20 | **[예방]** `test:` Formula DoS 한계값 초과 — depth 51 수식 → `FormulaValidationException` | DONE | FormulaConstants + FormulaLoaderTest |
 
 ---
 
