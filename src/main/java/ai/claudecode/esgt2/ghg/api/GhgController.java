@@ -22,6 +22,7 @@ import java.util.UUID;
 public class GhgController {
 
     private final GhgService ghgService;
+    private final ConsolidationService consolidationService;
 
     @Operation(summary = "활동 데이터 등록", description = "Scope 1/2 활동 데이터를 등록합니다.")
     @ApiResponse(responseCode = "201", description = "등록 성공")
@@ -72,5 +73,34 @@ public class GhgController {
             @PathVariable UUID entityId,
             @RequestParam int reportingYear) {
         return ResponseEntity.ok(ghgService.findEmissionRecords(auth.getTenantId(), entityId, reportingYear));
+    }
+
+    @Operation(summary = "연결 집계 산출",
+        description = "다법인 지분 구조 기반 연결 GHG 배출량을 산출합니다. method: EQUITY | OPERATIONAL_CONTROL")
+    @ApiResponse(responseCode = "201", description = "산출 성공")
+    @ApiResponse(responseCode = "400", description = "잘못된 연결 방법 또는 순환 지분 구조")
+    @ApiResponse(responseCode = "403", description = "권한 없음")
+    @PostMapping("/entities/{rootEntityId}/consolidations")
+    @PreAuthorize("hasRole('ESG_MANAGER')")
+    public ResponseEntity<ConsolidationResponse> consolidate(
+            @AuthenticationPrincipal JwtAuthentication auth,
+            @PathVariable UUID rootEntityId,
+            @RequestParam int reportingYear,
+            @RequestParam String method) {
+        var response = consolidationService.consolidate(
+            auth.getTenantId(), rootEntityId, reportingYear, method);
+        return ResponseEntity.status(201).body(response);
+    }
+
+    @Operation(summary = "연결 집계 이력 조회", description = "루트 법인 기준 연결 집계 이력을 조회합니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @GetMapping("/entities/{rootEntityId}/consolidations")
+    @PreAuthorize("hasAnyRole('ESG_MANAGER', 'ESG_VIEWER')")
+    public ResponseEntity<List<ConsolidationResponse>> findConsolidations(
+            @AuthenticationPrincipal JwtAuthentication auth,
+            @PathVariable UUID rootEntityId,
+            @RequestParam int reportingYear) {
+        return ResponseEntity.ok(
+            consolidationService.findConsolidations(auth.getTenantId(), rootEntityId, reportingYear));
     }
 }

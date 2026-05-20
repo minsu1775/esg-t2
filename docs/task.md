@@ -188,15 +188,17 @@
 
 | ID | 태스크 | 상태 | 비고 |
 |---|---|---|---|
-| T-4-01 | V10__consolidated_tables.sql | TODO | |
-| T-4-02 | `test:` 3법인 Equity Method 연결 계산 정확도 | TODO | |
-| T-4-03 | `test:` 순환 지분 구조 탐지 → 예외 | TODO | |
-| T-4-04 | `test:` 이중 계상 제거 (A→B→C 체인) | TODO | |
-| T-4-05 | `test:` 지분율 수정 후 재계산 일관성 | TODO | |
-| T-4-06 | `feat:` ConsolidationEngine 도메인 서비스 | TODO | Equity / Operational Control |
-| T-4-07 | `feat:` 이중 계상 제거 알고리즘 | TODO | |
-| T-4-08 | `feat:` GET /api/v1/entities/{id}/consolidated | TODO | |
-| T-4-09 | `feat:` GET /api/v1/entities/{id}/consolidated?view=individual | TODO | |
+| T-4-01 | V15__consolidated_emission_records.sql + V16__consolidated_rls.sql | DONE | P1: Append-only, RLS 적용 |
+| T-4-02 | `test:` 3법인 Equity Method 연결 계산 정확도 | DONE | ConsolidationEngineTest |
+| T-4-03 | `test:` 순환 지분 구조 탐지 → 예외 | DONE | ConsolidationEngineTest |
+| T-4-04 | `test:` 이중 계상 제거 (A→B→C 체인) | DONE | ConsolidationEngineTest |
+| T-4-05 | `test:` 지분율 수정 후 재계산 일관성 | DONE | ConsolidationEngineTest |
+| T-4-06 | `feat:` ConsolidationEngine 도메인 서비스 | DONE | Equity / Operational Control, BigDecimal scale=6 |
+| T-4-07 | `feat:` 이중 계상 제거 알고리즘 | DONE | effectiveOwnershipRatio 경로 곱 방식 |
+| T-4-08 | `feat:` POST /api/v1/ghg/entities/{id}/consolidations | DONE | ConsolidationService + GhgController 엔드포인트 |
+| T-4-09 | `feat:` GET /api/v1/ghg/entities/{id}/consolidations | DONE | 연결 집계 이력 조회 |
+| T-4-10 | `test:` ConsolidationServiceIntegrationTest (통합 테스트 5건) | DONE | 105 tests passed |
+| T-4-11 | Spring Modulith 경계: entity.api/ NamedInterface 선언 | DONE | ghg → entity::api 정상 접근, ModularityTest 통과 |
 
 ---
 

@@ -373,7 +373,30 @@
 
 ## Phase 4: 다법인 연결 집계
 
-_Phase 완료 후 내용 추가 예정_
+### L-4-01: Spring Modulith NamedInterface — 크로스 모듈 도메인 타입 공개 방법
+
+**문제**: `entity.domain.*` 타입을 `ghg` 모듈이 참조하면 ModularityTest 위반. 타입을 `entity.api/`로 이동해도 `@NamedInterface` 없이는 여전히 "non-exposed"로 처리됨.
+
+**원인**: Spring Modulith 2.0에서 `@ApplicationModule`만 선언한 모듈은 하위 패키지 중 `@NamedInterface`로 명시한 패키지만 공개 API로 인식. `api/`라는 이름 자체가 자동으로 exposed를 의미하지 않음.
+
+**해결 패턴**:
+1. 공개할 패키지의 `package-info.java`에 `@NamedInterface("api")` 선언
+2. 다른 모듈에서는 `allowedDependencies = {"entity :: api"}` 없이도 접근 가능 (기본 개방)
+3. `allowedDependencies`는 접근 허용이 아닌 접근 제한 용도 — 추가 시 명시한 의존성 외 모두 차단됨
+
+### L-4-02: 테스트 간 FK 순서 — EmissionFactorLoader 격리 실패 패턴
+
+**문제**: `EmissionFactorLoaderTest.cleanup()`이 `emission_factors`만 삭제. 다른 테스트 클래스(ConsolidationServiceIntegrationTest)가 먼저 실행되고 `emission_records`(emission_factor_id FK)가 남아 있으면 FK 위반.
+
+**원인**: `@BeforeEach` cleanup은 자신의 클래스 테스트 사이에만 실행. 마지막 테스트가 끝난 후의 잔류 데이터는 다음 테스트 클래스의 `@BeforeEach`까지 남음.
+
+**해결**: 각 테스트 클래스의 cleanup에서 FK 의존 순서 역방향으로 모든 관련 테이블 삭제. 새 테이블 추가 시 모든 기존 cleanup 메서드 검토 필요.
+
+### L-4-03: TestContainers 테넌트 FK — 통합 테스트 고유 테넌트 사용 시
+
+**문제**: 통합 테스트에서 `legal_entities.tenant_id → tenants(id)` FK로 인해 테스트용 테넌트 ID가 `tenants` 테이블에 존재해야 함.
+
+**해결 패턴**: `@BeforeEach`에서 `INSERT INTO tenants ... ON CONFLICT DO NOTHING` — 테스트 테넌트를 멱등하게 삽입. 테스트 클래스별로 고유 UUID 사용하여 다른 테스트와 충돌 방지.
 
 ---
 

@@ -1,5 +1,8 @@
 package ai.claudecode.esgt2.entity.domain;
 
+import ai.claudecode.esgt2.entity.api.ConsolidationMethod;
+import ai.claudecode.esgt2.entity.api.EntityRelationship;
+import ai.claudecode.esgt2.entity.api.EntityRelationshipGraph;
 import ai.claudecode.esgt2.shared.exception.EsgException;
 import org.junit.jupiter.api.Test;
 

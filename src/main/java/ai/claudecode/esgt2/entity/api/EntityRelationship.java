@@ -1,5 +1,6 @@
-package ai.claudecode.esgt2.entity.domain;
+package ai.claudecode.esgt2.entity.api;
 
+import ai.claudecode.esgt2.entity.domain.CreateEntityRelationshipCommand;
 import ai.claudecode.esgt2.shared.exception.EsgErrorCode;
 import ai.claudecode.esgt2.shared.exception.EsgException;
 

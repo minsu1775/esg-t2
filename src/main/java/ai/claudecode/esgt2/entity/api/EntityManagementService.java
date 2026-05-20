@@ -7,4 +7,5 @@ public interface EntityManagementService {
     EntityResponse create(UUID tenantId, CreateEntityRequest request);
     List<EntityResponse> findAll(UUID tenantId);
     RelationshipResponse setRelationship(UUID tenantId, UUID parentId, SetRelationshipRequest request);
+    List<RelationshipResponse> findRelationships(UUID tenantId);
 }

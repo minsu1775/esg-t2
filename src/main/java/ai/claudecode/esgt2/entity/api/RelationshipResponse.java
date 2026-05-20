@@ -1,6 +1,5 @@
 package ai.claudecode.esgt2.entity.api;
 
-import ai.claudecode.esgt2.entity.domain.ConsolidationMethod;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.math.BigDecimal;

@@ -5,10 +5,10 @@ import ai.claudecode.esgt2.entity.api.EntityManagementService;
 import ai.claudecode.esgt2.entity.api.EntityResponse;
 import ai.claudecode.esgt2.entity.api.RelationshipResponse;
 import ai.claudecode.esgt2.entity.api.SetRelationshipRequest;
+import ai.claudecode.esgt2.entity.api.EntityRelationship;
+import ai.claudecode.esgt2.entity.api.EntityRelationshipGraph;
 import ai.claudecode.esgt2.entity.domain.CreateEntityRelationshipCommand;
 import ai.claudecode.esgt2.entity.domain.CreateLegalEntityCommand;
-import ai.claudecode.esgt2.entity.domain.EntityRelationship;
-import ai.claudecode.esgt2.entity.domain.EntityRelationshipGraph;
 import ai.claudecode.esgt2.entity.domain.LegalEntity;
 import ai.claudecode.esgt2.entity.infra.EntityRelationshipJpaEntity;
 import ai.claudecode.esgt2.entity.infra.EntityRelationshipMapper;
@@ -86,6 +86,14 @@ class DefaultEntityManagementService implements EntityManagementService {
 
         var saved = relationshipRepository.save(EntityRelationshipMapper.toEntity(domain));
         return toRelResponse(saved);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<RelationshipResponse> findRelationships(UUID tenantId) {
+        return relationshipRepository.findByTenantId(tenantId).stream()
+            .map(this::toRelResponse)
+            .toList();
     }
 
     private EntityResponse toEntityResponse(LegalEntityJpaEntity e) {

@@ -270,6 +270,32 @@
 
 ---
 
+### Phase 4: 다법인 연결 집계 엔진 리뷰 (2026-05-20)
+
+**구현 범위**
+- `ConsolidationEngine` 도메인 서비스 (Equity / Operational Control Method)
+- `EntityRelationshipGraph`를 DAG로 표현, effectiveOwnershipRatio 경로 곱으로 이중 계상 제거
+- `ConsolidatedEmissionRecord` + `ConsolidatedEmissionContribution` Append-only 저장 (P1 재현성)
+- `ConsolidationService` 인터페이스 + `DefaultConsolidationService` 구현
+- `GhgController`에 연결 집계 엔드포인트 추가 (POST/GET `/consolidations`)
+- Spring Modulith 경계: `entity.api/`에 `@NamedInterface("api")` 선언
+
+**발견 및 수정 이슈**
+
+| 심각도 | 항목 | 수정 내용 |
+|---|---|---|
+| P1 | `ConsolidationMethod`, `EntityRelationship`, `EntityRelationshipGraph`가 `entity.domain/`에 위치 → Spring Modulith 경계 위반 | 세 타입을 `entity.api/`로 이동 + `@NamedInterface("api")` 선언 |
+| P2 | `EmissionFactorLoaderTest.cleanup()`이 `emission_records`를 먼저 삭제하지 않아 FK 위반 발생 | cleanup에 `consolidated_*`, `emission_records`, `activity_data` 삭제 순서 추가 |
+| P3 | `ConsolidationServiceIntegrationTest`: `tenants` 테이블에 테스트 테넌트(`000...003`) 미등록 → FK 위반 | `@BeforeEach`에 `INSERT INTO tenants ... ON CONFLICT DO NOTHING` 추가 |
+| P3 | 감사로그 테스트: Outbox 패턴 고려 없이 직접 `audit_logs` 카운트 | `outboxProcessingService.processNow()` 호출 후 검증 |
+
+**테스트 결과**: ✅ **BUILD SUCCESSFUL** (105 tests, 0 failures)
+- 도메인 단위 테스트 7건 (ConsolidationEngineTest)
+- 통합 테스트 5건 (ConsolidationServiceIntegrationTest)
+- ModularityTest 통과 (entity.api NamedInterface 경계 준수)
+
+---
+
 ## 3. 공통 이슈 트래킹
 
 > 같은 이슈가 3회 이상 반복되면 체크리스트에 항목 추가

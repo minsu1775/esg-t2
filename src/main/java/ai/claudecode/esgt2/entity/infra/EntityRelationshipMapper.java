@@ -1,6 +1,6 @@
 package ai.claudecode.esgt2.entity.infra;
 
-import ai.claudecode.esgt2.entity.domain.EntityRelationship;
+import ai.claudecode.esgt2.entity.api.EntityRelationship;
 
 public final class EntityRelationshipMapper {
 

@@ -1,5 +1,7 @@
 package ai.claudecode.esgt2.entity.domain;
 
+import ai.claudecode.esgt2.entity.api.ConsolidationMethod;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;

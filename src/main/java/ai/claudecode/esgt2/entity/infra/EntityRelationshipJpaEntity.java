@@ -1,6 +1,6 @@
 package ai.claudecode.esgt2.entity.infra;
 
-import ai.claudecode.esgt2.entity.domain.ConsolidationMethod;
+import ai.claudecode.esgt2.entity.api.ConsolidationMethod;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;

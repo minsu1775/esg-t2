@@ -26,6 +26,10 @@ class EmissionFactorLoaderTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void cleanup() {
+        jdbcTemplate.execute("DELETE FROM consolidated_emission_contributions");
+        jdbcTemplate.execute("DELETE FROM consolidated_emission_records");
+        jdbcTemplate.execute("DELETE FROM emission_records");
+        jdbcTemplate.execute("DELETE FROM activity_data");
         jdbcTemplate.execute("DELETE FROM emission_factors");
     }
 
