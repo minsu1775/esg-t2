@@ -49,6 +49,9 @@ dependencies {
     // YAML 파싱 (Formula DSL)
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml")
 
+    // CSV 업로드 파이프라인
+    implementation("org.apache.commons:commons-csv:1.12.0")
+
     // Lombok
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
