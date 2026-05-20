@@ -398,6 +398,26 @@
 
 **해결 패턴**: `@BeforeEach`에서 `INSERT INTO tenants ... ON CONFLICT DO NOTHING` — 테스트 테넌트를 멱등하게 삽입. 테스트 클래스별로 고유 UUID 사용하여 다른 테스트와 충돌 방지.
 
+### L-4-04: GHG Protocol Operational Control — "경로 곱" vs "직접 지배 체인"
+
+**문제**: 최초 구현에서 `consolidateOperationalControl()`이 `effectiveOwnershipRatio(경로 곱) > 50%`로 포함 여부를 판별. A→B(60%)→C(70%) 구조에서 C의 경로 곱은 0.42이므로 제외됨.
+
+**GHG Protocol 기준**: Operational Control은 경로 곱이 아니라, 루트에서 대상까지의 경로 상 "모든 직접 지분이 50% 초과"인지를 판별한다. B가 C를 지배(70%)하고 A가 B를 지배(60%)하면, A는 B를 통해 C에 대한 운영 지배력을 갖는다. 따라서 C가 포함되어야 한다.
+
+**해결**: `EntityRelationshipGraph.hasDirectControlChain(from, to, threshold)` 도입. DFS로 경로를 탐색하되 각 링크가 threshold(50%)를 초과하는 경로가 존재하는지만 확인. `ConsolidationEngine.consolidateOperationalControl()`은 이 메서드로 포함 여부를 결정.
+
+**핵심 구분**:
+- Equity: `effectiveOwnershipRatio(경로 곱)` → 비례 귀속 비율 계산용
+- Operational Control: `hasDirectControlChain(모든 링크 > 50%)` → 포함/제외 이분 판단용
+
+### L-4-05: API 파라미터 타입 안전성 — String 대신 enum 바인딩
+
+**문제**: `ConsolidationService.consolidate(... String method)`를 사용하면 "EQUITY", "INVALID_STRING" 등 어떤 값이든 서비스까지 도달. `parseMethod()`에서 `IllegalArgumentException` 발생 후 `EsgException`으로 변환하는 경로를 거침.
+
+**해결**: 인터페이스와 컨트롤러 모두 `ConsolidationMethod` enum으로 교체. Spring MVC가 자동으로 `"EQUITY"` → `ConsolidationMethod.EQUITY` 변환을 처리하며, 변환 실패 시 `MethodArgumentTypeMismatchException` 발생. `GlobalExceptionHandler`에 핸들러 추가하여 400 응답.
+
+**추가 조치**: `GlobalExceptionHandler`에 `MethodArgumentTypeMismatchException` 핸들러가 없으면 enum 변환 실패가 catch-all `Exception`에 걸려 500 반환. 새 enum 파라미터 도입 시 핸들러 추가 여부를 코드 리뷰에서 확인할 것.
+
 ---
 
 ## Phase 5: Scope 3 계산

@@ -200,6 +200,21 @@
 | T-4-10 | `test:` ConsolidationServiceIntegrationTest (통합 테스트 5건) | DONE | 105 tests passed |
 | T-4-11 | Spring Modulith 경계: entity.api/ NamedInterface 선언 | DONE | ghg → entity::api 정상 접근, ModularityTest 통과 |
 
+### Phase 4 재검토 수정 (2026-05-20)
+
+| ID | 태스크 | 상태 | 비고 |
+|---|---|---|---|
+| T-4R-01 | **[P1]** `consolidateOperationalControl()` GHG Protocol 알고리즘 수정 | DONE | `hasDirectControlChain()` 도입 — 직접 지배 체인 각 링크 > 50% 판별. ConsolidationEngineTest +2건. 통합 테스트 합계 778.8로 수정 |
+| T-4R-02 | **[P0]** `DefaultConsolidationService.consolidate()` rootEntityId 테넌트 소속 검증 | DONE | `EntityManagementService.findById(tenantId, entityId)` 추가 → 불일치 시 404 |
+| T-4R-03 | **[P2]** `buildDirectEmissions()` N+1 쿼리 → IN 쿼리 일괄 조회 | DONE | `EmissionRecordRepository.findByTenantIdAndEntityIdInAndReportingYear()` 추가 |
+| T-4R-04 | **[P2]** `findConsolidations()` N+1 쿼리 → `findByConsolidatedRecordIdIn()` + Java groupingBy | DONE | 집계 레코드 수만큼 발생하던 기여분 조회를 단일 IN 쿼리로 교체 |
+| T-4R-05 | **[P2]** `persistContributions()` 개별 INSERT → `saveAll()` 배치 | DONE | `ConsolidatedEmissionContributionRepository.saveAll()` 추가 |
+| T-4R-06 | **[P3]** `ConsolidationService` method 파라미터 String → ConsolidationMethod enum | DONE | 인터페이스·구현체·컨트롤러 일괄 교체. `parseMethod()` 제거 |
+| T-4R-07 | **[P3]** `GlobalExceptionHandler` — MethodArgumentTypeMismatchException 핸들러 추가 | DONE | enum 변환 실패 시 500 → 400으로 수정 |
+| T-4R-08 | **[P3]** `ConsolidationResponse`, `ConsolidationItemResponse` @Schema 전수 적용 | DONE | OpenAPI 자동 문서화 완성 |
+| T-4R-09 | **[P3]** `GhgController` 연결 집계 엔드포인트 @Parameter 어노테이션 추가 | DONE | |
+| T-4R-10 | **[P3]** `V17__add_contribution_constraints.sql` — ownership_ratio CHECK 제약 | DONE | `0 < ownership_ratio <= 1` |
+
 ---
 
 ## Phase 5: Scope 3 계산 엔진

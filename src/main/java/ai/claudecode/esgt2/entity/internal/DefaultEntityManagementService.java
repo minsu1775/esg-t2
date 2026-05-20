@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -51,6 +52,14 @@ class DefaultEntityManagementService implements EntityManagementService {
         return legalEntityRepository.findActiveByTenantId(tenantId).stream()
             .map(this::toEntityResponse)
             .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<EntityResponse> findById(UUID tenantId, UUID entityId) {
+        return legalEntityRepository.findById(entityId)
+            .filter(e -> e.getTenantId().equals(tenantId))
+            .map(this::toEntityResponse);
     }
 
     @Override

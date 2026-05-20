@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -45,8 +46,12 @@ class DefaultConsolidationService implements ConsolidationService {
     @Override
     @Transactional
     @Auditable(action = "CONSOLIDATION_CALCULATED")
-    public ConsolidationResponse consolidate(UUID tenantId, UUID rootEntityId, int reportingYear, String method) {
-        ConsolidationMethod consolidationMethod = parseMethod(method);
+    public ConsolidationResponse consolidate(UUID tenantId, UUID rootEntityId, int reportingYear,
+                                              ConsolidationMethod method) {
+        // P0: rootEntityId 테넌트 소속 검증 (크로스 테넌트 방어 — 03-security.md)
+        entityManagementService.findById(tenantId, rootEntityId)
+            .orElseThrow(() -> new EsgException(EsgErrorCode.RESOURCE_NOT_FOUND,
+                "법인을 찾을 수 없습니다: " + rootEntityId));
 
         List<EntityRelationship> rels = entityManagementService.findRelationships(tenantId).stream()
             .map(r -> toEntityRelationship(r, tenantId))
@@ -58,7 +63,7 @@ class DefaultConsolidationService implements ConsolidationService {
 
         Map<UUID, BigDecimal> directEmissions = buildDirectEmissions(tenantId, entityIds, reportingYear);
 
-        ConsolidationResult result = consolidationMethod == ConsolidationMethod.EQUITY
+        ConsolidationResult result = method == ConsolidationMethod.EQUITY
             ? ConsolidationEngine.consolidateEquity(rootEntityId, directEmissions, graph)
             : ConsolidationEngine.consolidateOperationalControl(rootEntityId, directEmissions, graph);
 
@@ -71,7 +76,7 @@ class DefaultConsolidationService implements ConsolidationService {
                 .reportingYear(reportingYear)
                 .scope("ALL")
                 .ghgType("CO2E")
-                .consolidationMethod(method)
+                .consolidationMethod(method.name())
                 .totalEmission(result.totalConsolidatedEmission())
                 .build());
 
@@ -84,66 +89,70 @@ class DefaultConsolidationService implements ConsolidationService {
     @Override
     @Transactional(readOnly = true)
     public List<ConsolidationResponse> findConsolidations(UUID tenantId, UUID rootEntityId, int reportingYear) {
-        return consolidatedRecordRepository
-            .findByTenantIdAndRootEntityIdAndReportingYear(tenantId, rootEntityId, reportingYear)
-            .stream()
+        List<ConsolidatedEmissionRecordJpaEntity> records = consolidatedRecordRepository
+            .findByTenantIdAndRootEntityIdAndReportingYear(tenantId, rootEntityId, reportingYear);
+
+        if (records.isEmpty()) {
+            return List.of();
+        }
+
+        // N+1 방지: 모든 집계 레코드의 기여분을 단일 IN 쿼리로 일괄 조회
+        List<UUID> recordIds = records.stream().map(ConsolidatedEmissionRecordJpaEntity::getId).toList();
+        Map<UUID, List<ConsolidatedEmissionContributionJpaEntity>> contributionsByRecord =
+            contributionRepository.findByConsolidatedRecordIdIn(recordIds).stream()
+                .collect(Collectors.groupingBy(
+                    ConsolidatedEmissionContributionJpaEntity::getConsolidatedRecordId));
+
+        return records.stream()
             .map(r -> {
-                List<ConsolidationItemResponse> contributions =
-                    contributionRepository.findByConsolidatedRecordId(r.getId()).stream()
-                        .map(c -> new ConsolidationItemResponse(
-                            c.getEntityId(), c.getOwnershipRatio(), c.getWeightedEmission()))
-                        .toList();
-                return toResponse(r, contributions);
+                List<ConsolidationItemResponse> items = contributionsByRecord
+                    .getOrDefault(r.getId(), List.of()).stream()
+                    .map(c -> new ConsolidationItemResponse(
+                        c.getEntityId(), c.getOwnershipRatio(), c.getWeightedEmission()))
+                    .toList();
+                return toResponse(r, items);
             })
             .toList();
     }
 
     private Map<UUID, BigDecimal> buildDirectEmissions(UUID tenantId, Set<UUID> entityIds, int reportingYear) {
+        // N+1 방지: entityId IN (?) 단일 쿼리로 일괄 조회
         Map<UUID, BigDecimal> directEmissions = new HashMap<>();
-        for (UUID entityId : entityIds) {
-            BigDecimal total = emissionRecordRepository
-                .findByTenantIdAndEntityIdAndReportingYear(tenantId, entityId, reportingYear)
-                .stream()
-                .map(e -> e.getRawEmission())
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-            directEmissions.put(entityId, total);
-        }
+        emissionRecordRepository
+            .findByTenantIdAndEntityIdInAndReportingYear(tenantId, entityIds, reportingYear)
+            .forEach(e -> directEmissions.merge(e.getEntityId(), e.getRawEmission(), BigDecimal::add));
+        // 배출 기록이 없는 법인은 0으로 초기화
+        entityIds.forEach(id -> directEmissions.putIfAbsent(id, BigDecimal.ZERO));
         return directEmissions;
     }
 
     private List<ConsolidationItemResponse> persistContributions(UUID recordId, UUID rootEntityId,
             EntityRelationshipGraph graph, Map<UUID, BigDecimal> entityContributions) {
+        List<ConsolidatedEmissionContributionJpaEntity> entities = new ArrayList<>();
         List<ConsolidationItemResponse> items = new ArrayList<>();
+
         for (Map.Entry<UUID, BigDecimal> entry : entityContributions.entrySet()) {
             UUID entityId = entry.getKey();
             BigDecimal ratio = entityId.equals(rootEntityId)
                 ? BigDecimal.ONE
                 : graph.effectiveOwnershipRatio(rootEntityId, entityId);
 
-            contributionRepository.save(
-                ConsolidatedEmissionContributionJpaEntity.builder()
-                    .consolidatedRecordId(recordId)
-                    .entityId(entityId)
-                    .ownershipRatio(ratio)
-                    .weightedEmission(entry.getValue())
-                    .build());
+            entities.add(ConsolidatedEmissionContributionJpaEntity.builder()
+                .consolidatedRecordId(recordId)
+                .entityId(entityId)
+                .ownershipRatio(ratio)
+                .weightedEmission(entry.getValue())
+                .build());
             items.add(new ConsolidationItemResponse(entityId, ratio, entry.getValue()));
         }
+
+        contributionRepository.saveAll(entities);
         return items;
     }
 
     private static EntityRelationship toEntityRelationship(RelationshipResponse r, UUID tenantId) {
         return new EntityRelationship(r.id(), tenantId, r.parentId(), r.childId(),
             r.ownershipRatio(), r.method(), r.effectiveFrom(), r.effectiveTo());
-    }
-
-    private static ConsolidationMethod parseMethod(String method) {
-        try {
-            return ConsolidationMethod.valueOf(method);
-        } catch (IllegalArgumentException e) {
-            throw new EsgException(EsgErrorCode.VALIDATION_FAILED,
-                "지원하지 않는 연결 방법입니다: " + method + " (EQUITY 또는 OPERATIONAL_CONTROL)");
-        }
     }
 
     private static ConsolidationResponse toResponse(ConsolidatedEmissionRecordJpaEntity r,

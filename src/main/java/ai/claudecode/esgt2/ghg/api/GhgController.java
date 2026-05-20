@@ -1,7 +1,9 @@
 package ai.claudecode.esgt2.ghg.api;
 
+import ai.claudecode.esgt2.entity.api.ConsolidationMethod;
 import ai.claudecode.esgt2.shared.security.JwtAuthentication;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -76,17 +78,19 @@ public class GhgController {
     }
 
     @Operation(summary = "연결 집계 산출",
-        description = "다법인 지분 구조 기반 연결 GHG 배출량을 산출합니다. method: EQUITY | OPERATIONAL_CONTROL")
+        description = "다법인 지분 구조 기반 연결 GHG 배출량을 산출합니다.")
     @ApiResponse(responseCode = "201", description = "산출 성공")
-    @ApiResponse(responseCode = "400", description = "잘못된 연결 방법 또는 순환 지분 구조")
+    @ApiResponse(responseCode = "400", description = "잘못된 연결 방법(EQUITY|OPERATIONAL_CONTROL) 또는 순환 지분 구조")
     @ApiResponse(responseCode = "403", description = "권한 없음")
+    @ApiResponse(responseCode = "404", description = "루트 법인 없음")
     @PostMapping("/entities/{rootEntityId}/consolidations")
     @PreAuthorize("hasRole('ESG_MANAGER')")
     public ResponseEntity<ConsolidationResponse> consolidate(
             @AuthenticationPrincipal JwtAuthentication auth,
             @PathVariable UUID rootEntityId,
-            @RequestParam int reportingYear,
-            @RequestParam String method) {
+            @Parameter(description = "보고 연도", example = "2025") @RequestParam int reportingYear,
+            @Parameter(description = "연결 방법 (EQUITY | OPERATIONAL_CONTROL)", example = "EQUITY")
+            @RequestParam ConsolidationMethod method) {
         var response = consolidationService.consolidate(
             auth.getTenantId(), rootEntityId, reportingYear, method);
         return ResponseEntity.status(201).body(response);
@@ -99,7 +103,7 @@ public class GhgController {
     public ResponseEntity<List<ConsolidationResponse>> findConsolidations(
             @AuthenticationPrincipal JwtAuthentication auth,
             @PathVariable UUID rootEntityId,
-            @RequestParam int reportingYear) {
+            @Parameter(description = "보고 연도", example = "2025") @RequestParam int reportingYear) {
         return ResponseEntity.ok(
             consolidationService.findConsolidations(auth.getTenantId(), rootEntityId, reportingYear));
     }

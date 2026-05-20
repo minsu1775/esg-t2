@@ -50,8 +50,12 @@ public final class ConsolidationEngine {
     }
 
     /**
-     * Operational Control Method 연결 집계.
-     * 운영 지배력 보유 법인(지분율 > 50%)의 배출량을 100% 포함, 미보유 법인 제외.
+     * Operational Control Method 연결 집계 (GHG Protocol 준수).
+     * 루트에서 하위 법인까지의 직접 지배 체인 상 모든 링크의 지분율이 50% 초과인 경우
+     * 해당 법인의 배출량을 100% 포함한다.
+     * — effectiveOwnershipRatio(경로 곱) 임계값 방식과 다름 —
+     * 예: A→B(60%)→C(70%): 모든 링크 > 50% → C 포함.
+     *     A→B(40%)→C(70%): B 링크 ≤ 50% → B, C 모두 제외.
      */
     public static ConsolidationResult consolidateOperationalControl(
             UUID rootEntityId,
@@ -66,9 +70,7 @@ public final class ConsolidationEngine {
         BigDecimal total = rootEmission;
 
         for (UUID descendant : graph.allDescendants(rootEntityId)) {
-            BigDecimal directRatio = graph.effectiveOwnershipRatio(rootEntityId, descendant);
-            if (directRatio.compareTo(CONTROL_THRESHOLD) > 0) {
-                // 지배력 보유: 100% 포함
+            if (graph.hasDirectControlChain(rootEntityId, descendant, CONTROL_THRESHOLD)) {
                 BigDecimal directEmission = entityDirectEmissions.getOrDefault(descendant, BigDecimal.ZERO)
                     .setScale(6, RoundingMode.HALF_UP);
                 contributions.put(descendant, directEmission);

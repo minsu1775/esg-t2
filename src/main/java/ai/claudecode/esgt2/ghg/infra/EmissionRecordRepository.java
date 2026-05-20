@@ -2,6 +2,7 @@ package ai.claudecode.esgt2.ghg.infra;
 
 import org.springframework.data.repository.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -15,4 +16,8 @@ public interface EmissionRecordRepository extends Repository<EmissionRecordJpaEn
 
     List<EmissionRecordJpaEntity> findByTenantIdAndEntityIdAndReportingYear(
         UUID tenantId, UUID entityId, int reportingYear);
+
+    // 연결 집계용: 여러 법인 배출량을 단일 IN 쿼리로 조회 (N+1 방지)
+    List<EmissionRecordJpaEntity> findByTenantIdAndEntityIdInAndReportingYear(
+        UUID tenantId, Collection<UUID> entityIds, int reportingYear);
 }

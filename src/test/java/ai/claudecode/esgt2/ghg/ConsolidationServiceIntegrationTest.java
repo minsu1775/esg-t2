@@ -95,7 +95,7 @@ class ConsolidationServiceIntegrationTest extends AbstractIntegrationTest {
     void Equity_Method_3법인_연결_집계() {
         // A: 259.6, B: 0.60×259.6=155.76, C: 0.42×259.6=109.032 → 합계 524.392
         ConsolidationResponse response = consolidationService.consolidate(
-            TENANT_ID, entityA, 2025, "EQUITY");
+            TENANT_ID, entityA, 2025, ConsolidationMethod.EQUITY);
 
         assertThat(response.id()).isNotNull();
         assertThat(response.rootEntityId()).isEqualTo(entityA);
@@ -106,21 +106,21 @@ class ConsolidationServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void Operational_Control_42퍼_자회사_제외() {
-        // A: 259.6 (루트), B: 60%>50% → 100% 포함 259.6, C: 42%≤50% → 제외
-        // 합계 = 519.2
+    void Operational_Control_직접지배체인_전부_포함() {
+        // A→B(60%)→C(70%): 모든 링크 > 50% → GHG Protocol 기준 A, B, C 전부 포함
+        // A: 259.6, B: 259.6 (100% 포함), C: 259.6 (100% 포함) → 합계 778.8
         ConsolidationResponse response = consolidationService.consolidate(
-            TENANT_ID, entityA, 2025, "OPERATIONAL_CONTROL");
+            TENANT_ID, entityA, 2025, ConsolidationMethod.OPERATIONAL_CONTROL);
 
         assertThat(response.consolidationMethod()).isEqualTo("OPERATIONAL_CONTROL");
-        assertThat(response.totalEmission()).isEqualByComparingTo(new BigDecimal("519.200000"));
-        assertThat(response.contributions()).hasSize(2);
+        assertThat(response.totalEmission()).isEqualByComparingTo(new BigDecimal("778.800000"));
+        assertThat(response.contributions()).hasSize(3);
     }
 
     @Test
     void 연결_집계_이력_조회() {
-        consolidationService.consolidate(TENANT_ID, entityA, 2025, "EQUITY");
-        consolidationService.consolidate(TENANT_ID, entityA, 2025, "OPERATIONAL_CONTROL");
+        consolidationService.consolidate(TENANT_ID, entityA, 2025, ConsolidationMethod.EQUITY);
+        consolidationService.consolidate(TENANT_ID, entityA, 2025, ConsolidationMethod.OPERATIONAL_CONTROL);
 
         List<ConsolidationResponse> history =
             consolidationService.findConsolidations(TENANT_ID, entityA, 2025);
@@ -132,7 +132,7 @@ class ConsolidationServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void 연결_집계_산출_시_감사로그_생성() {
-        consolidationService.consolidate(TENANT_ID, entityA, 2025, "EQUITY");
+        consolidationService.consolidate(TENANT_ID, entityA, 2025, ConsolidationMethod.EQUITY);
         outboxProcessingService.processNow();
 
         long auditCount = jdbcTemplate.queryForObject(
@@ -144,7 +144,7 @@ class ConsolidationServiceIntegrationTest extends AbstractIntegrationTest {
     @Test
     void 기여분_상세_저장_확인() {
         ConsolidationResponse response = consolidationService.consolidate(
-            TENANT_ID, entityA, 2025, "EQUITY");
+            TENANT_ID, entityA, 2025, ConsolidationMethod.EQUITY);
 
         long contribCount = jdbcTemplate.queryForObject(
             "SELECT COUNT(*) FROM consolidated_emission_contributions WHERE consolidated_record_id = ?",

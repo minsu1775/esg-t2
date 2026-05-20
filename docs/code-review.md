@@ -280,7 +280,7 @@
 - `GhgController`에 연결 집계 엔드포인트 추가 (POST/GET `/consolidations`)
 - Spring Modulith 경계: `entity.api/`에 `@NamedInterface("api")` 선언
 
-**발견 및 수정 이슈**
+**발견 및 수정 이슈 (구현 중)**
 
 | 심각도 | 항목 | 수정 내용 |
 |---|---|---|
@@ -289,10 +289,64 @@
 | P3 | `ConsolidationServiceIntegrationTest`: `tenants` 테이블에 테스트 테넌트(`000...003`) 미등록 → FK 위반 | `@BeforeEach`에 `INSERT INTO tenants ... ON CONFLICT DO NOTHING` 추가 |
 | P3 | 감사로그 테스트: Outbox 패턴 고려 없이 직접 `audit_logs` 카운트 | `outboxProcessingService.processNow()` 호출 후 검증 |
 
-**테스트 결과**: ✅ **BUILD SUCCESSFUL** (105 tests, 0 failures)
-- 도메인 단위 테스트 7건 (ConsolidationEngineTest)
+---
+
+### Phase 4 재검토: 7개 영역별 심층 리뷰 (2026-05-20)
+
+> 영역별 검토: ① 비즈니스 로직(GHG Protocol) ② 보안 ③ 성능 ④ API 설계 ⑤ 테스트 커버리지 ⑥ OpenAPI ⑦ DDL 품질
+
+**① 비즈니스 로직 — GHG Protocol 정확성**
+
+| 심각도 | 항목 | 수정 내용 |
+|---|---|---|
+| **P1** | `consolidateOperationalControl()` — 다단계 구조에서 "실질 소유율(경로 곱) > 50%" 방식 사용. GHG Protocol은 "직접 지배 체인 각 링크 > 50%"로 판별해야 함. A→B(60%)→C(70%) 체인에서 C의 실질 소유율 0.42로 제외했으나, GHG Protocol 기준 C도 포함되어야 함 | `EntityRelationshipGraph.hasDirectControlChain(from, to, threshold)` 추가. `ConsolidationEngine.consolidateOperationalControl()` 해당 메서드로 교체. 통합 테스트 합계 수정: 519.2 → 778.8 (C 포함) |
+| P3 | `ConsolidationEngine` 지역 변수명 `directRatio`가 `effectiveOwnershipRatio(경로 곱)`를 담아 오해 유발 | 코드 주석으로 방법론 차이 명시 |
+
+**② 보안 — 크로스 테넌트 방어**
+
+| 심각도 | 항목 | 수정 내용 |
+|---|---|---|
+| **P0** | `DefaultConsolidationService.consolidate()` — `rootEntityId`의 테넌트 소속 검증 없음. RLS만으로는 방어 불충분 (03-security.md: 애플리케이션 레벨 이중 검증 필수) | `EntityManagementService.findById(tenantId, entityId)` 추가. 서비스 진입 직후 검증 → 불일치 시 `RESOURCE_NOT_FOUND(404)` |
+
+**③ 성능 — N+1 쿼리 및 배치 처리**
+
+| 심각도 | 항목 | 수정 내용 |
+|---|---|---|
+| P2 | `buildDirectEmissions()` — entityId당 개별 DB 조회 (10법인 = 10쿼리) | `EmissionRecordRepository.findByTenantIdAndEntityIdInAndReportingYear()` IN 쿼리 추가 후 일괄 조회. Java에서 entityId별 합산 |
+| P2 | `findConsolidations()` — 각 집계 레코드당 기여분 별도 조회 (N+1) | `ConsolidatedEmissionContributionRepository.findByConsolidatedRecordIdIn()` 추가. recordIds IN 쿼리 후 Java groupingBy |
+| P2 | `persistContributions()` — 기여분 개별 `save()` 반복 | `ConsolidatedEmissionContributionRepository.saveAll()` 추가. 리스트 빌드 후 단일 배치 INSERT |
+
+**④ API 설계 — 타입 안전성**
+
+| 심각도 | 항목 | 수정 내용 |
+|---|---|---|
+| P3 | `ConsolidationService.consolidate()` `method` 파라미터가 `String` → 런타임 오류 가능 | 인터페이스·구현체·컨트롤러 모두 `ConsolidationMethod` enum으로 교체. `parseMethod()` 헬퍼 제거 |
+| P3 | `GlobalExceptionHandler` — `MethodArgumentTypeMismatchException` 핸들러 없음 → enum 변환 실패 시 500 반환 | `MethodArgumentTypeMismatchException` 핸들러 추가 → 400 응답 |
+| P3 | `GhgController` 연결 집계 엔드포인트 — `@Parameter` 어노테이션 없음 (OpenAPI 미문서화) | `reportingYear`, `method` 파라미터에 `@Parameter(description, example)` 추가 |
+
+**⑤ 테스트 커버리지**
+
+| 심각도 | 항목 | 수정 내용 |
+|---|---|---|
+| P2 | Operational Control 3단계 체인 케이스 없음 (2단계만 테스트) | `ConsolidationEngineTest`: `Operational_Control_3단계_체인_모든_링크_지배_시_하위도_포함`, `Operational_Control_3단계_중간_링크_비지배면_하위_전체_제외` 2건 추가 |
+
+**⑥ OpenAPI 문서화**
+
+| 심각도 | 항목 | 수정 내용 |
+|---|---|---|
+| P3 | `ConsolidationResponse`, `ConsolidationItemResponse` 필드 `@Schema` 없음 | 두 record에 `@Schema(description, example)` 전수 적용 |
+| P3 | `GhgApi.java` 주석이 `ConsolidationService` 미언급 | ConsolidationService 포함으로 주석 업데이트 |
+
+**⑦ DDL 품질**
+
+| 심각도 | 항목 | 수정 내용 |
+|---|---|---|
+| P3 | `consolidated_emission_contributions.ownership_ratio` — 0~1 범위 CHECK 제약 없음 | `V17__add_contribution_constraints.sql`: `CHECK (ownership_ratio IS NULL OR (ownership_ratio > 0 AND ownership_ratio <= 1))` 추가 |
+
+**테스트 결과**: ✅ **BUILD SUCCESSFUL** (107 tests, 0 failures)
+- 도메인 단위 테스트 9건 (ConsolidationEngineTest +2)
 - 통합 테스트 5건 (ConsolidationServiceIntegrationTest)
-- ModularityTest 통과 (entity.api NamedInterface 경계 준수)
+- ModularityTest 통과
 
 ---
 
@@ -314,7 +368,7 @@
 | Phase 1 | Domain≠Entity 원칙, RLS 정책 적용, TenantContextInterceptor `SET LOCAL` 검증, 크로스 테넌트 이중 방어 |
 | Phase 2 | @Auditable AOP 커버리지, Hash Chain PESSIMISTIC_WRITE, Canonical JSON 단일 직렬화 경로 |
 | Phase 3 | YAML 로더 멱등성, 배출계수 계산 `BigDecimal` 전용(float/double 금지), `reporting_year` SQL 예약어 방지, `factorAt` 재현성 테스트 |
-| Phase 4 | 연결 집계 이중 계상 제거 알고리즘 |
+| Phase 4 | Operational Control GHG Protocol 준수 (직접 지배 체인), 크로스 테넌트 rootEntityId 검증, N+1 쿼리 |
 | Phase 5 | Scope 3 95% 임계값 계산 로직, 데이터 품질 점수 |
 | Phase 6 | 공급업체 데이터 격리, Webhook 시그니처 검증 |
 | Phase 7 | KSSB 2 항목 완전성 (미구현 항목 없음), YoY 계산 |

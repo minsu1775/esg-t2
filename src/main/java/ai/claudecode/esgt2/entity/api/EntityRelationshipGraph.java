@@ -58,6 +58,29 @@ public class EntityRelationshipGraph {
         return roots;
     }
 
+    /**
+     * GHG Protocol Operational Control 판별.
+     * 루트(fromId)에서 대상(toId)까지의 경로 상 모든 직접 지분이 threshold 초과인지 확인한다.
+     * Equity Method의 경로 곱(effectiveOwnershipRatio)과 다른 방식이다.
+     */
+    public boolean hasDirectControlChain(UUID fromId, UUID toId, BigDecimal threshold) {
+        return checkControlChain(fromId, toId, threshold, new HashSet<>());
+    }
+
+    private boolean checkControlChain(UUID current, UUID target, BigDecimal threshold, Set<UUID> visited) {
+        if (current.equals(target)) return true;
+        if (!visited.add(current)) return false;
+
+        for (EntityRelationship rel : adjacency.getOrDefault(current, List.of())) {
+            if (rel.ownershipRatio().compareTo(threshold) > 0) {
+                if (checkControlChain(rel.childId(), target, threshold, new HashSet<>(visited))) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     private void dfs(UUID nodeId, Set<UUID> visited) {
         if (!visited.add(nodeId)) return;
         for (EntityRelationship rel : adjacency.getOrDefault(nodeId, List.of())) {

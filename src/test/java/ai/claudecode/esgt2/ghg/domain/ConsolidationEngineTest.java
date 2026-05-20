@@ -88,7 +88,7 @@ class ConsolidationEngineTest {
     }
 
     @Test
-    void Operational_Control_100퍼_소유_법인만_포함(/* T-4-02 */) {
+    void Operational_Control_직접_지배_법인만_포함(/* T-4-02 */) {
         // PARENT: CHILD1 80%(지배), CHILD2 30%(비지배)
         EntityRelationshipGraph graph = EntityRelationshipGraph.of(List.of(
             rel(PARENT, CHILD1, "0.80", ConsolidationMethod.OPERATIONAL_CONTROL),
@@ -99,18 +99,58 @@ class ConsolidationEngineTest {
             CHILD1, new BigDecimal("200.000000"),
             CHILD2, new BigDecimal("300.000000")
         );
-        Map<UUID, ConsolidationMethod> methods = Map.of(
-            CHILD1, ConsolidationMethod.OPERATIONAL_CONTROL,
-            CHILD2, ConsolidationMethod.OPERATIONAL_CONTROL
-        );
 
-        // 지배 기준 50% 초과: CHILD1(80%) 포함, CHILD2(30%) 제외
-        // 100 + 200 = 300
+        // CHILD1(80% > 50%) 포함, CHILD2(30% ≤ 50%) 제외 → 100 + 200 = 300
         ConsolidationResult result = ConsolidationEngine.consolidateOperationalControl(
             PARENT, emissions, graph);
 
         assertThat(result.totalConsolidatedEmission())
             .isEqualByComparingTo(new BigDecimal("300.000000"));
+    }
+
+    @Test
+    void Operational_Control_3단계_체인_모든_링크_지배_시_하위도_포함() {
+        // PARENT→CHILD1(80%)→GRANDCHILD(70%): 모든 링크 > 50% → GRANDCHILD 포함
+        EntityRelationshipGraph graph = EntityRelationshipGraph.of(List.of(
+            rel(PARENT, CHILD1, "0.80", ConsolidationMethod.OPERATIONAL_CONTROL),
+            rel(CHILD1, GRANDCHILD, "0.70", ConsolidationMethod.OPERATIONAL_CONTROL)
+        ));
+        Map<UUID, BigDecimal> emissions = Map.of(
+            PARENT, new BigDecimal("100.000000"),
+            CHILD1, new BigDecimal("200.000000"),
+            GRANDCHILD, new BigDecimal("150.000000")
+        );
+
+        // PARENT+CHILD1+GRANDCHILD 전부 포함 → 100 + 200 + 150 = 450
+        ConsolidationResult result = ConsolidationEngine.consolidateOperationalControl(
+            PARENT, emissions, graph);
+
+        assertThat(result.totalConsolidatedEmission())
+            .isEqualByComparingTo(new BigDecimal("450.000000"));
+        assertThat(result.entityContributions()).containsKey(GRANDCHILD);
+    }
+
+    @Test
+    void Operational_Control_3단계_중간_링크_비지배면_하위_전체_제외() {
+        // PARENT→CHILD1(40%)→GRANDCHILD(70%): CHILD1 링크가 40% ≤ 50% → CHILD1, GRANDCHILD 모두 제외
+        EntityRelationshipGraph graph = EntityRelationshipGraph.of(List.of(
+            rel(PARENT, CHILD1, "0.40", ConsolidationMethod.OPERATIONAL_CONTROL),
+            rel(CHILD1, GRANDCHILD, "0.70", ConsolidationMethod.OPERATIONAL_CONTROL)
+        ));
+        Map<UUID, BigDecimal> emissions = Map.of(
+            PARENT, new BigDecimal("100.000000"),
+            CHILD1, new BigDecimal("200.000000"),
+            GRANDCHILD, new BigDecimal("150.000000")
+        );
+
+        // PARENT만 포함 → 100
+        ConsolidationResult result = ConsolidationEngine.consolidateOperationalControl(
+            PARENT, emissions, graph);
+
+        assertThat(result.totalConsolidatedEmission())
+            .isEqualByComparingTo(new BigDecimal("100.000000"));
+        assertThat(result.entityContributions()).doesNotContainKey(CHILD1);
+        assertThat(result.entityContributions()).doesNotContainKey(GRANDCHILD);
     }
 
     @Test

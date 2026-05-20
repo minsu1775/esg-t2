@@ -10,6 +10,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @RestControllerAdvice
 @Slf4j
@@ -31,6 +32,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleOptimisticLock(OptimisticLockingFailureException e) {
         return ResponseEntity.status(409)
             .body(ErrorResponse.of("OPTIMISTIC_LOCK_CONFLICT", "동시 수정 충돌이 발생했습니다. 다시 시도해주세요."));
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException e) {
+        String message = String.format("'%s' 파라미터 값이 유효하지 않습니다: %s", e.getName(), e.getValue());
+        return ResponseEntity.status(400)
+            .body(ErrorResponse.of("VALIDATION_FAILED", message));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
