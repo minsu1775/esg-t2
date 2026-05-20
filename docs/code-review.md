@@ -191,9 +191,18 @@
 
 | 항목 | 우선순위 | 내용 |
 |---|---|---|
-| `DefaultGhgService.calculateEmissions()` — `EmissionRecordJpaEntity.builder()` 직접 호출 | P1 | 서비스에서 JPA Entity 직접 생성. `EmissionRecord` 도메인 + `EmissionRecordMapper` 도입 필요 |
 | `activity_data` `standard_value`/`standard_unit` 미채움 | P2 | `UnitConverter` (T-3B-08) 구현 후 연동 필요 |
 | Phase 2 부채: `DefaultEntityManagementService` Mapper | P1 | Phase 2에서 이월 — Phase 3-B 착수 전 해소 권장 |
+
+### 2026-05-20 | Phase 3 상세 리뷰 추가 수정
+
+| 발견 사항 | 심각도 | 수정 내용 |
+|---|---|---|
+| `DefaultGhgService.calculateEmissions()` — `EmissionRecordJpaEntity.builder()` 직접 호출 | **P1** | `EmissionRecord` 도메인 record + `EmissionRecordMapper` 생성. 서비스는 `EmissionRecord.calculate()` 팩토리 + `EmissionRecordMapper.toEntity()` 경유 |
+| `emission_records` 테이블 — `db/migration-pg` RLS + REVOKE 누락 | **P1** | `V9__emission_records_rls.sql` 생성 — `ENABLE ROW LEVEL SECURITY` + `REVOKE UPDATE, DELETE` (audit_logs와 동일 패턴) |
+| `DefaultEmissionFactorResolver` — `@Component` 사용 (명명 규칙 불일치) | P3 | `@Service`로 교체 (`Default*` 구현체는 `@Service` 통일) |
+
+전체 테스트 결과: ✅ **BUILD SUCCESSFUL** (GHG 17건 포함 전체 테스트 통과)
 
 ---
 

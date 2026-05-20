@@ -8,10 +8,12 @@ import ai.claudecode.esgt2.ghg.domain.ActivityData;
 import ai.claudecode.esgt2.ghg.domain.CreateActivityDataCommand;
 import ai.claudecode.esgt2.ghg.domain.EmissionCalculator;
 import ai.claudecode.esgt2.ghg.domain.EmissionFactorResolver;
+import ai.claudecode.esgt2.ghg.domain.EmissionRecord;
 import ai.claudecode.esgt2.ghg.infra.ActivityDataJpaEntity;
 import ai.claudecode.esgt2.ghg.infra.ActivityDataMapper;
 import ai.claudecode.esgt2.ghg.infra.ActivityDataRepository;
 import ai.claudecode.esgt2.ghg.infra.EmissionRecordJpaEntity;
+import ai.claudecode.esgt2.ghg.infra.EmissionRecordMapper;
 import ai.claudecode.esgt2.ghg.infra.EmissionRecordRepository;
 import ai.claudecode.esgt2.shared.audit.Auditable;
 import lombok.RequiredArgsConstructor;
@@ -69,18 +71,11 @@ class DefaultGhgService implements GhgService {
             BigDecimal emission = EmissionCalculator.computeEmission(ad.getQuantity(), factor.factorValue());
             String scope = deriveScopeFromCategory(ad.getCategory());
 
-            var record = EmissionRecordJpaEntity.builder()
-                .tenantId(ad.getTenantId())
-                .entityId(ad.getEntityId())
-                .activityDataId(ad.getId())
-                .reportingYear(ad.getReportingYear())
-                .scope(scope)
-                .ghgType("CO2E")
-                .emissionFactorId(factor.id())
-                .rawEmission(emission)
-                .build();
-
-            var saved = emissionRecordRepository.save(record);
+            var domain = EmissionRecord.calculate(
+                ad.getTenantId(), ad.getEntityId(), ad.getId(),
+                ad.getReportingYear(), scope, "CO2E",
+                factor.id(), emission);
+            var saved = emissionRecordRepository.save(EmissionRecordMapper.toEntity(domain));
             return toEmissionRecordResponse(saved);
         }).toList();
     }

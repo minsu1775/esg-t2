@@ -5,12 +5,12 @@ import ai.claudecode.esgt2.ghg.domain.EmissionFactorResolver;
 import ai.claudecode.esgt2.shared.exception.EsgErrorCode;
 import ai.claudecode.esgt2.shared.exception.EsgException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 
-@Component
+@Service
 @RequiredArgsConstructor
 public class DefaultEmissionFactorResolver implements EmissionFactorResolver {
 
