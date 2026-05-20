@@ -13,7 +13,8 @@ public record CreateActivityDataCommand(
     String unit,
     String countryCode,
     String dataSource,
-    String dataQuality
+    String dataQuality,
+    Integer lifetimeYears   // Cat.11 전용 (nullable)
 ) {
     public CreateActivityDataCommand {
         if (tenantId == null) throw new IllegalArgumentException("tenantId 필수");

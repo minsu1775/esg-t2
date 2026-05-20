@@ -16,7 +16,8 @@ public record ActivityData(
     String dataSource,
     String dataQuality,
     BigDecimal standardValue,   // 기준 단위 변환값 (nullable)
-    String standardUnit         // 기준 단위 (nullable)
+    String standardUnit,        // 기준 단위 (nullable)
+    Integer lifetimeYears       // Cat.11 전용 (nullable)
 ) {
     public static ActivityData create(CreateActivityDataCommand cmd) {
         String stdUnit = UnitConverter.standardUnitFor(cmd.unit());
@@ -37,7 +38,8 @@ public record ActivityData(
             cmd.quantity(), cmd.unit(), cmd.countryCode(),
             cmd.dataSource() != null ? cmd.dataSource() : "MANUAL",
             cmd.dataQuality() != null ? cmd.dataQuality() : "AVERAGE_DATA",
-            stdValue, stdUnit
+            stdValue, stdUnit,
+            cmd.lifetimeYears()
         );
     }
 }

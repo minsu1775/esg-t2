@@ -46,7 +46,8 @@ class DefaultGhgService implements GhgService {
             tenantId, entityId,
             request.reportingYear(), request.category(), request.subCategory(),
             request.quantity(), request.unit(), request.countryCode(),
-            request.dataSource(), request.dataQuality());
+            request.dataSource(), request.dataQuality(),
+            request.lifetimeYears());
 
         ActivityData domain = ActivityData.create(cmd);
         var saved = activityDataRepository.save(ActivityDataMapper.toEntity(domain));

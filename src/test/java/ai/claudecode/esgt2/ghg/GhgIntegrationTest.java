@@ -67,7 +67,7 @@ class GhgIntegrationTest extends AbstractIntegrationTest {
     @Test
     void 활동데이터_등록_성공() {
         var request = new CreateActivityDataRequest(2025, "SCOPE1_FUEL", "DIESEL_AUTO",
-            new BigDecimal("100"), "kL", "KR", "MANUAL", "AVERAGE_DATA");
+            new BigDecimal("100"), "kL", "KR", "MANUAL", "AVERAGE_DATA", null);
 
         ActivityDataResponse response = ghgService.createActivityData(TENANT_ID, entityId, request);
 
@@ -80,7 +80,7 @@ class GhgIntegrationTest extends AbstractIntegrationTest {
     @Test
     void 활동데이터_등록_시_감사로그_생성() {
         var request = new CreateActivityDataRequest(2025, "SCOPE1_FUEL", "DIESEL_AUTO",
-            new BigDecimal("50"), "kL", "KR", "MANUAL", "AVERAGE_DATA");
+            new BigDecimal("50"), "kL", "KR", "MANUAL", "AVERAGE_DATA", null);
         ghgService.createActivityData(TENANT_ID, entityId, request);
 
         outboxProcessingService.processNow();
@@ -93,7 +93,7 @@ class GhgIntegrationTest extends AbstractIntegrationTest {
     @Test
     void Scope1_배출량_산출_경유_100kL() {
         var request = new CreateActivityDataRequest(2025, "SCOPE1_FUEL", "DIESEL_AUTO",
-            new BigDecimal("100"), "kL", "KR", "MANUAL", "AVERAGE_DATA");
+            new BigDecimal("100"), "kL", "KR", "MANUAL", "AVERAGE_DATA", null);
         ghgService.createActivityData(TENANT_ID, entityId, request);
 
         List<EmissionRecordResponse> records = ghgService.calculateEmissions(TENANT_ID, entityId, 2025);
@@ -109,7 +109,7 @@ class GhgIntegrationTest extends AbstractIntegrationTest {
     @Test
     void Scope2_배출량_산출_전력_1000MWh() {
         var request = new CreateActivityDataRequest(2025, "SCOPE2_ELECTRICITY", "GRID",
-            new BigDecimal("1000"), "MWh", "KR", "MANUAL", "AVERAGE_DATA");
+            new BigDecimal("1000"), "MWh", "KR", "MANUAL", "AVERAGE_DATA", null);
         ghgService.createActivityData(TENANT_ID, entityId, request);
 
         List<EmissionRecordResponse> records = ghgService.calculateEmissions(TENANT_ID, entityId, 2025);
@@ -123,7 +123,7 @@ class GhgIntegrationTest extends AbstractIntegrationTest {
     @Test
     void 배출량_기록_조회_성공() {
         var request = new CreateActivityDataRequest(2025, "SCOPE1_FUEL", "DIESEL_AUTO",
-            new BigDecimal("50"), "kL", "KR", "MANUAL", "AVERAGE_DATA");
+            new BigDecimal("50"), "kL", "KR", "MANUAL", "AVERAGE_DATA", null);
         ghgService.createActivityData(TENANT_ID, entityId, request);
         ghgService.calculateEmissions(TENANT_ID, entityId, 2025);
 
@@ -138,7 +138,7 @@ class GhgIntegrationTest extends AbstractIntegrationTest {
     void 배출량_기록은_INSERT_only_append_only_보장() {
         // EmissionRecord는 P1 원칙 — 저장 후 값 변경 불가
         var request = new CreateActivityDataRequest(2025, "SCOPE1_FUEL", "DIESEL_AUTO",
-            new BigDecimal("100"), "kL", "KR", "MANUAL", "AVERAGE_DATA");
+            new BigDecimal("100"), "kL", "KR", "MANUAL", "AVERAGE_DATA", null);
         ghgService.createActivityData(TENANT_ID, entityId, request);
         ghgService.calculateEmissions(TENANT_ID, entityId, 2025);
 
@@ -156,7 +156,7 @@ class GhgIntegrationTest extends AbstractIntegrationTest {
     @Test
     void BigDecimal_전용_산출_확인_소수점_6자리() {
         var request = new CreateActivityDataRequest(2025, "SCOPE1_FUEL", "DIESEL_AUTO",
-            new BigDecimal("1"), "kL", "KR", "MANUAL", "AVERAGE_DATA");
+            new BigDecimal("1"), "kL", "KR", "MANUAL", "AVERAGE_DATA", null);
         ghgService.createActivityData(TENANT_ID, entityId, request);
 
         List<EmissionRecordResponse> records = ghgService.calculateEmissions(TENANT_ID, entityId, 2025);

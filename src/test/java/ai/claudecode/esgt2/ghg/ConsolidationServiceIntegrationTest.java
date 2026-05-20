@@ -81,7 +81,7 @@ class ConsolidationServiceIntegrationTest extends AbstractIntegrationTest {
 
         // 각 법인: 경유 100kL → 259.600000 tCO2e
         var actReq = new CreateActivityDataRequest(2025, "SCOPE1_FUEL", "DIESEL_AUTO",
-            new BigDecimal("100"), "kL", "KR", "MANUAL", "AVERAGE_DATA");
+            new BigDecimal("100"), "kL", "KR", "MANUAL", "AVERAGE_DATA", null);
         ghgService.createActivityData(TENANT_ID, entityA, actReq);
         ghgService.createActivityData(TENANT_ID, entityB, actReq);
         ghgService.createActivityData(TENANT_ID, entityC, actReq);
