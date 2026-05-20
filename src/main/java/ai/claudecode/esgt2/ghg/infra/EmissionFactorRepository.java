@@ -10,8 +10,21 @@ import java.util.UUID;
 
 public interface EmissionFactorRepository extends JpaRepository<EmissionFactorJpaEntity, UUID> {
 
-    Optional<EmissionFactorJpaEntity> findBySourceAndCategoryAndSubCategoryAndCountryCodeAndReportingYear(
-        String source, String category, String subCategory, String countryCode, int reportingYear);
+    @Query("""
+        SELECT e FROM EmissionFactorJpaEntity e
+        WHERE e.source = :source
+          AND e.category = :category
+          AND (:subCategory IS NULL OR e.subCategory = :subCategory)
+          AND (:countryCode IS NULL OR e.countryCode = :countryCode)
+          AND e.reportingYear = :reportingYear
+          AND e.isActive = true
+        """)
+    Optional<EmissionFactorJpaEntity> findActiveBySourceAndCategoryAndSubCategoryAndCountryCodeAndReportingYear(
+        @Param("source") String source,
+        @Param("category") String category,
+        @Param("subCategory") String subCategory,
+        @Param("countryCode") String countryCode,
+        @Param("reportingYear") int reportingYear);
 
     // resolveAt: subCategory 포함 산출 시점 기준 유효한 계수 조회 (과거 재현성, L-0-09)
     @Query("""

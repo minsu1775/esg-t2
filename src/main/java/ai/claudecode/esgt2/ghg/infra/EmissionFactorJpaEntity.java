@@ -73,8 +73,8 @@ public class EmissionFactorJpaEntity {
         this.createdAt = Instant.now();
     }
 
-    public void updateValue(BigDecimal newFactorValue, String newUnit) {
-        this.factorValue = newFactorValue;
-        this.unit = newUnit;
+    public void deactivate(LocalDate endDate) {
+        this.isActive = false;
+        this.effectiveTo = endDate;
     }
 }

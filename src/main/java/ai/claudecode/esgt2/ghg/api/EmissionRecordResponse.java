@@ -9,7 +9,6 @@ import java.util.UUID;
 @Schema(description = "배출량 기록 응답")
 public record EmissionRecordResponse(
     @Schema(description = "배출량 기록 ID") UUID id,
-    @Schema(description = "테넌트 ID") UUID tenantId,
     @Schema(description = "법인 ID") UUID entityId,
     @Schema(description = "활동 데이터 ID") UUID activityDataId,
     @Schema(description = "보고 연도") int reportingYear,

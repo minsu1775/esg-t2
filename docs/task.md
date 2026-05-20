@@ -168,6 +168,20 @@
 | T-3B-19 | **[예방]** `test:` 활동 데이터 삭제 시도 → 물리 삭제 없이 비활성화 처리 확인 | DONE | ActivityDataRepository extends JpaRepository (status 필드 관리) |
 | T-3B-20 | **[예방]** `test:` Formula DoS 한계값 초과 — depth 51 수식 → `FormulaValidationException` | DONE | FormulaConstants + FormulaLoaderTest |
 
+### Phase 3 + 3-B 종합 재검토 수정 (2026-05-20)
+
+| ID | 태스크 | 상태 | 비고 |
+|---|---|---|---|
+| T-3R-01 | **[P0]** `activity_data` RLS 정책 추가 | DONE | `V12__activity_data_rls.sql` — ENABLE ROW LEVEL SECURITY + tenant_isolation |
+| T-3R-02 | **[P0]** `evidence_files` RLS 정책 추가 | DONE | `V13__evidence_files_rls.sql` — ENABLE ROW LEVEL SECURITY + tenant_isolation |
+| T-3R-03 | **[P0]** `ActivityDataResponse`, `EmissionRecordResponse`에서 `tenantId` 제거 | DONE | API 응답에 테넌트 식별자 노출 차단 |
+| T-3R-04 | **[P1]** `EmissionFactorLoader.upsert()` — UPDATE → 비활성화+INSERT 방식으로 전환 | DONE | `deactivate(today-1)` + 새 레코드 INSERT(effective_from=today). `V14__fix_ef_unique_constraint.sql`로 UNIQUE 제약 교체 |
+| T-3R-05 | **[P1]** `EmissionRecordRepository.findById()` 노출 | DONE | append-only Repository에 `Optional<EmissionRecordJpaEntity> findById(UUID id)` 추가 |
+| T-3R-06 | **[P1]** `SimpleExpressionEvaluator` double 사용 목적 문서화 | DONE | 클래스 주석에 "test_cases 검증 전용 — 실제 배출량 계산은 BigDecimal" 명시 |
+| T-3R-07 | **[P2]** `calculateEmissions()` 배출계수 캐싱 | DONE | `Map<String, EmissionFactor> factorCache` — 동일 카테고리 반복 DB 조회 방지 |
+| T-3R-08 | **[P2]** `deriveScopeFromCategory()` SCOPE2_MB 구분 로직 수정 | DONE | `endsWith("_MB")` 선 체크 추가 |
+| T-3R-09 | **[P3]** `ActivityDataJpaEntity` 상태 전이 메서드 추가 | DONE | `submit()`, `approve()`, `reject(reason)` — 직접 setStatus() 호출 방지 |
+
 ---
 
 ## Phase 4: 다법인 연결 집계 엔진

@@ -54,17 +54,26 @@ public class EmissionFactorLoader {
     }
 
     private void upsert(EmissionFactorYaml yaml, EmissionFactorYaml.EmissionFactorYamlEntry entry) {
-        var existing = repository.findBySourceAndCategoryAndSubCategoryAndCountryCodeAndReportingYear(
+        var existing = repository.findActiveBySourceAndCategoryAndSubCategoryAndCountryCodeAndReportingYear(
             yaml.source(), entry.category(), entry.subCategory(),
             entry.countryCode(), yaml.reportingYear());
 
-        // 항목 레벨 upsert — 파일 레벨 스킵 금지 (L-0-02, 07-formula-dsl.md)
+        LocalDate yamlEffectiveFrom = LocalDate.parse(yaml.effectiveFrom());
+
+        // P1 재현성: UPDATE 금지 — 기존 계수 비활성화 후 새 계수 INSERT (06-emission-calculation.md)
         if (existing.isPresent()) {
-            var entity = existing.get();
-            entity.updateValue(new BigDecimal(entry.factorValue()), entry.unit());
-            repository.save(entity);
-            log.debug("배출계수 업데이트: source={}, category={}, sub={}", yaml.source(), entry.category(), entry.subCategory());
-        } else {
+            var oldEntity = existing.get();
+            if (oldEntity.getFactorValue().compareTo(new BigDecimal(entry.factorValue())) == 0
+                    && oldEntity.getUnit().equals(entry.unit())) {
+                log.debug("배출계수 변경 없음, 스킵: source={}, category={}", yaml.source(), entry.category());
+                return;
+            }
+            LocalDate today = LocalDate.now();
+            oldEntity.deactivate(today.minusDays(1));
+            repository.save(oldEntity);
+            log.debug("기존 배출계수 비활성화: source={}, category={}, sub={}", yaml.source(), entry.category(), entry.subCategory());
+
+            // 새 레코드의 effective_from = 오늘 (기존 비활성화 레코드와 unique key 충돌 방지)
             repository.save(EmissionFactorJpaEntity.builder()
                 .id(UUID.randomUUID())
                 .source(yaml.source())
@@ -75,10 +84,26 @@ public class EmissionFactorLoader {
                 .gwpSource(yaml.gwpSource())
                 .factorValue(new BigDecimal(entry.factorValue()))
                 .unit(entry.unit())
-                .effectiveFrom(LocalDate.parse(yaml.effectiveFrom()))
+                .effectiveFrom(today)
                 .effectiveTo(yaml.effectiveTo() != null ? LocalDate.parse(yaml.effectiveTo()) : null)
                 .build());
-            log.debug("배출계수 신규 등록: source={}, category={}, sub={}", yaml.source(), entry.category(), entry.subCategory());
+            log.info("배출계수 갱신 완료 (이전값 비활성화): source={}, category={}, sub={}", yaml.source(), entry.category(), entry.subCategory());
+            return;
         }
+
+        repository.save(EmissionFactorJpaEntity.builder()
+            .id(UUID.randomUUID())
+            .source(yaml.source())
+            .category(entry.category())
+            .subCategory(entry.subCategory())
+            .countryCode(entry.countryCode())
+            .reportingYear(yaml.reportingYear())
+            .gwpSource(yaml.gwpSource())
+            .factorValue(new BigDecimal(entry.factorValue()))
+            .unit(entry.unit())
+            .effectiveFrom(yamlEffectiveFrom)
+            .effectiveTo(yaml.effectiveTo() != null ? LocalDate.parse(yaml.effectiveTo()) : null)
+            .build());
+        log.debug("배출계수 신규 등록: source={}, category={}, sub={}", yaml.source(), entry.category(), entry.subCategory());
     }
 }

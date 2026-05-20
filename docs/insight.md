@@ -339,7 +339,35 @@
 
 ## Phase 3: 배출계수 & Scope 1/2
 
-_Phase 완료 후 내용 추가 예정_
+### L-3-01: UNIQUE 제약과 버전 관리의 충돌 — 설계 단계에서 결정해야 한다
+
+**현상**: `emission_factors` 테이블에 `UNIQUE (source, category, sub_category, country_code, reporting_year)` 제약이 있었는데, P1 재현성 원칙("UPDATE 금지, 비활성화+INSERT")을 적용하려 하자 동일 키를 가진 새 레코드를 삽입할 수 없어 `DataIntegrityViolationException` 발생.
+
+**원인**: "현재값 단일 저장" 설계(`UNIQUE on business key`)와 "기간별 버전 이력 저장" 설계(`UNIQUE on business key + effective_from`)는 서로 호환되지 않는다. 배출계수처럼 버전 관리가 필요한 테이블은 초기 스키마 설계 시 `effective_from`을 UNIQUE 키에 포함해야 한다.
+
+**교훈**: 재현성이 필요한 마스터 데이터 테이블은 스키마 설계 단계에서 `effective_from`을 UNIQUE 키에 포함시킨다. 나중에 제약을 교체하면 `V14__fix_ef_unique_constraint.sql` 같은 추가 마이그레이션 비용이 발생한다.
+
+**esg-t2 적용**: `V14` 마이그레이션으로 제약 교체 완료. 이후 버전 관리가 필요한 마스터 테이블(배출계수, 산식 등)은 설계 시 `effective_from` UNIQUE 키 포함.
+
+---
+
+### L-3-02: API 응답 DTO에 tenantId 노출 — 보안 체크리스트 항목
+
+**현상**: `ActivityDataResponse`, `EmissionRecordResponse`에 `tenantId` 필드가 포함되어 있었다. 테넌트 식별자는 내부 시스템 키이며 API 응답에 노출되면 테넌트 구조 유출 위험이 있다.
+
+**교훈**: 응답 DTO 설계 시 내부 식별자(`tenantId`, 내부 시스템 ID)는 기본 제외. `entityId`, `reportingYear` 등 클라이언트가 실제로 필요한 필드만 포함.
+
+**esg-t2 적용**: 코드 리뷰 체크리스트 1.5항 "API 응답에 비밀번호·토큰·개인식별정보 노출 없음"에 `tenantId` 노출도 포함하여 점검.
+
+---
+
+### L-3-03: YAML 로더에서 배출계수 비활성화+INSERT 패턴 — effective_from 날짜 선택
+
+**현상**: 배출계수 갱신 시 기존 레코드를 비활성화하고 새 레코드를 INSERT할 때, 새 레코드의 `effective_from`을 YAML 파일의 날짜로 사용하면 기존 비활성화 레코드와 UNIQUE 키 충돌 발생.
+
+**교훈**: 로더가 값 변경을 감지하여 새 레코드를 삽입할 때는 `effective_from = 오늘`을 사용한다. YAML의 `effective_from`은 "이 계수가 처음 발효된 날짜"이고, 갱신된 새 레코드의 발효일은 "갱신 시점(오늘)"이기 때문이다.
+
+**esg-t2 적용**: `EmissionFactorLoader.upsert()` — 값 변경 감지 시 `LocalDate.now()`를 새 레코드의 `effective_from`으로 사용.
 
 ---
 

@@ -7,6 +7,7 @@ import ai.claudecode.esgt2.ghg.api.GhgService;
 import ai.claudecode.esgt2.ghg.domain.ActivityData;
 import ai.claudecode.esgt2.ghg.domain.CreateActivityDataCommand;
 import ai.claudecode.esgt2.ghg.domain.EmissionCalculator;
+import ai.claudecode.esgt2.ghg.domain.EmissionFactor;
 import ai.claudecode.esgt2.ghg.domain.EmissionFactorResolver;
 import ai.claudecode.esgt2.ghg.domain.EmissionRecord;
 import ai.claudecode.esgt2.ghg.infra.ActivityDataJpaEntity;
@@ -23,7 +24,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -64,10 +67,15 @@ class DefaultGhgService implements GhgService {
         var activityDataList = activityDataRepository.findByTenantIdAndEntityIdAndReportingYear(
             tenantId, entityId, reportingYear);
 
+        // P2: 배출계수 캐싱으로 동일 카테고리에 대한 반복 DB 조회 방지 (category+sub+country+date → factor)
+        Map<String, EmissionFactor> factorCache = new HashMap<>();
+
         return activityDataList.stream().map(ad -> {
             var date = LocalDate.of(ad.getReportingYear(), 1, 1);
-            var factor = emissionFactorResolver.resolveAt(
-                ad.getCategory(), ad.getSubCategory(), ad.getCountryCode(), date);
+            var cacheKey = ad.getCategory() + "|" + ad.getSubCategory() + "|" + ad.getCountryCode() + "|" + date;
+            var factor = factorCache.computeIfAbsent(cacheKey, k ->
+                emissionFactorResolver.resolveAt(ad.getCategory(), ad.getSubCategory(), ad.getCountryCode(), date));
+
             BigDecimal emission = EmissionCalculator.computeEmission(ad.getQuantity(), factor.factorValue());
             String scope = deriveScopeFromCategory(ad.getCategory());
 
@@ -89,6 +97,8 @@ class DefaultGhgService implements GhgService {
 
     private String deriveScopeFromCategory(String category) {
         if (category == null) return "SCOPE1";
+        // SCOPE2_ELECTRICITY_MB → market-based; SCOPE2_* → location-based
+        if (category.endsWith("_MB")) return "SCOPE2_MB";
         if (category.startsWith("SCOPE2")) return "SCOPE2_LB";
         if (category.startsWith("SCOPE3")) return "SCOPE3";
         return "SCOPE1";
@@ -96,7 +106,7 @@ class DefaultGhgService implements GhgService {
 
     private ActivityDataResponse toActivityDataResponse(ActivityDataJpaEntity e) {
         return new ActivityDataResponse(
-            e.getId(), e.getTenantId(), e.getEntityId(),
+            e.getId(), e.getEntityId(),
             e.getReportingYear(), e.getCategory(), e.getSubCategory(),
             e.getQuantity(), e.getUnit(), e.getCountryCode(),
             e.getDataSource(), e.getDataQuality(), e.getStatus(),
@@ -105,7 +115,7 @@ class DefaultGhgService implements GhgService {
 
     private EmissionRecordResponse toEmissionRecordResponse(EmissionRecordJpaEntity e) {
         return new EmissionRecordResponse(
-            e.getId(), e.getTenantId(), e.getEntityId(),
+            e.getId(), e.getEntityId(),
             e.getActivityDataId(), e.getReportingYear(),
             e.getScope(), e.getGhgType(), e.getEmissionFactorId(),
             e.getRawEmission(), e.isConsolidated(), e.getCalculatedAt());

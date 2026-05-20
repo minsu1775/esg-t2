@@ -4,6 +4,7 @@ import java.util.Map;
 
 /**
  * test_cases 검증 전용 단순 수식 평가기.
+ * double 사용은 배포 전 test_cases 통과 여부 확인 목적으로만 한정됨 — 실제 배출량 계산은 BigDecimal (06-emission-calculation.md).
  * 허용: 숫자 리터럴, 변수명, +, -, *, /, (, ).
  * 금지: T(...), new, SpEL, Reflection (07-formula-dsl.md).
  */

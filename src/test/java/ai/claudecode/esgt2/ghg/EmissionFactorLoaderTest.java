@@ -56,7 +56,8 @@ class EmissionFactorLoaderTest extends AbstractIntegrationTest {
 
         loader.loadFile(resource);
 
-        var updated = repository.findBySourceAndCategoryAndSubCategoryAndCountryCodeAndReportingYear(
+        // P1: 재로드 시 기존 계수 비활성화 + 새 계수 INSERT 방식 → 활성 계수 조회
+        var updated = repository.findActiveBySourceAndCategoryAndSubCategoryAndCountryCodeAndReportingYear(
             "KEEI", "SCOPE2_ELECTRICITY", "GRID", "KR", 2025);
 
         assertThat(updated).isPresent();

@@ -87,4 +87,26 @@ public class ActivityDataJpaEntity {
         this.createdAt = Instant.now();
         this.updatedAt = Instant.now();
     }
+
+    // 상태 전이 메서드 — setStatus() 직접 호출 금지 (01-domain-architecture.md)
+    public void submit(UUID actorId) {
+        if (!"DRAFT".equals(this.status)) throw new IllegalStateException("DRAFT 상태만 제출 가능");
+        this.status = "PENDING";
+        this.submittedBy = actorId;
+        this.updatedAt = Instant.now();
+    }
+
+    public void approve(UUID actorId) {
+        if (!"PENDING".equals(this.status)) throw new IllegalStateException("PENDING 상태만 승인 가능");
+        this.status = "APPROVED";
+        this.approvedBy = actorId;
+        this.updatedAt = Instant.now();
+    }
+
+    public void reject(UUID actorId, String reason) {
+        if (reason == null || reason.isBlank()) throw new IllegalArgumentException("반려 사유는 필수입니다");
+        if (!"PENDING".equals(this.status)) throw new IllegalStateException("PENDING 상태만 반려 가능");
+        this.status = "REJECTED";
+        this.updatedAt = Instant.now();
+    }
 }

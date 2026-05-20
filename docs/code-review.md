@@ -40,7 +40,8 @@
 ### 1.6 YAML 로더 (배출계수)
 
 - [ ] 파일 레벨 스킵 로직 없음 (`already_processed` 파일 체크 금지)
-- [ ] `ON CONFLICT DO UPDATE` 항목 레벨 upsert 사용
+- [ ] 항목 레벨 upsert: 값 변경 없으면 스킵, 값 변경 시 비활성화+새 INSERT (UPDATE in-place 금지)
+- [ ] 배출계수 갱신 시 새 레코드 `effective_from = 오늘` 사용 (YAML의 effective_from 아님)
 
 ### 1.7 Hash Chain
 
@@ -203,6 +204,69 @@
 | `DefaultEmissionFactorResolver` — `@Component` 사용 (명명 규칙 불일치) | P3 | `@Service`로 교체 (`Default*` 구현체는 `@Service` 통일) |
 
 전체 테스트 결과: ✅ **BUILD SUCCESSFUL** (GHG 17건 포함 전체 테스트 통과)
+
+---
+
+### 2026-05-20 | Phase 3-B 완료 리뷰
+
+| 항목 | 결과 | 비고 |
+|---|---|---|
+| 증빙 파일 업로드 — `DigestInputStream` 단일 I/O | ✅ | `CountingDigestInputStream` — SHA-256 + 파일 크기 동시 계산 |
+| 경로 순회 방어 — `resolveContained()` | ✅ | `normalize() + startsWith()` — `../../../etc/passwd` 거부 |
+| 확장자 허용 목록 | ✅ | `pdf, xlsx, xls, csv, png, jpg, jpeg` 7종만 허용 |
+| `UnitConverter` — BigDecimal 전용, scale=6 HALF_UP | ✅ | 12종 양방향 변환, `double` 사용 없음 |
+| 활동 데이터 — 원 단위 + 변환 단위 병행 저장 | ✅ | `ActivityData.create()` → `UnitConverter.standardUnitFor()` + `convert()` 자동 적용 |
+| Formula DSL — DoS 방어 상수 | ✅ | `FormulaConstants.MAX_EXPRESSION_LENGTH=1000`, `MAX_EVAL_DEPTH=50` |
+| Formula `test_cases` 게이트 | ✅ | `test_cases` 비어 있으면 `FormulaValidationException` — 활성화 차단 |
+| YAML 산식 3종 — test_cases 통과 | ✅ | EM-S1-FUEL, EM-S2-LB, EM-S2-MB 각 2~3건 케이스 모두 통과 |
+| ESG 지표 초기 데이터 | ✅ | V11: 8개 KSSB2 지표 (S-001~003, G-001~002, E-001~003) |
+| Spring Modulith 경계 — `ghg.internal` 외부 노출 차단 | ✅ | `EvidenceFileRepository`, `EvidenceFileJpaEntity` → `public`으로 변경하여 `ghg.infra` 내부 접근 허용 |
+| ModularityTest | ✅ PASS | 모듈 경계 위반 없음 |
+| 전체 테스트 | ✅ **94 tests, 0 failures** | Phase 0~3-B 누적 |
+
+**Phase 3-B 리뷰에서 발견하여 즉시 수정한 항목**:
+
+| 발견 사항 | 심각도 | 수정 내용 |
+|---|---|---|
+| `entity` 모듈 — Phase 2 부채: `DefaultEntityManagementService` Mapper 미도입 | **P1** | `LegalEntityMapper`, `EntityRelationshipMapper` 생성 후 서비스 교체 — `JpaEntity.builder()` 직접 호출 제거 |
+| `EvidenceFileRepository`, `EvidenceFileJpaEntity` — package-private 접근 오류 | **필수** | 두 클래스 `public`으로 변경 (Spring Modulith 모듈 내 cross-package 접근 허용) |
+
+---
+
+### 2026-05-20 | Phase 3 + 3-B 종합 재검토 수정
+
+> 검토 결과: 13건 발견 (P0: 3건, P1: 3건, P2: 4건, P3: 1건, 정보성: 2건)
+
+**P0 수정 (즉시)**:
+
+| 발견 사항 | 수정 내용 |
+|---|---|
+| `activity_data` 테이블 — RLS 정책 미적용 | `V12__activity_data_rls.sql` 생성 — `ENABLE ROW LEVEL SECURITY` + tenant_isolation 정책 |
+| `evidence_files` 테이블 — RLS 정책 미적용 | `V13__evidence_files_rls.sql` 생성 — `ENABLE ROW LEVEL SECURITY` + tenant_isolation 정책 |
+| `ActivityDataResponse`, `EmissionRecordResponse` — `tenantId` 필드 노출 | 두 응답 DTO에서 `tenantId` 제거, `DefaultGhgService` 매핑 메서드 수정 |
+
+**P1 수정 (재현성 보호)**:
+
+| 발견 사항 | 수정 내용 |
+|---|---|
+| `EmissionFactorLoader.upsert()` — `entity.updateValue()` UPDATE 호출로 재현성 파괴 | UPDATE 금지. 기존 계수 `deactivate(today-1)` + 새 계수 INSERT (effective_from=today). `V14__fix_ef_unique_constraint.sql`로 UNIQUE 제약도 `effective_from` 포함으로 교체 |
+| `EmissionRecordRepository` — `findById()` 미노출 | `Optional<EmissionRecordJpaEntity> findById(UUID id)` 추가 |
+| `SimpleExpressionEvaluator` — `double` 사용 (test_cases 전용이므로 정밀도 우려) | 클래스 문서 주석에 "test_cases 검증 전용 — 실제 배출량 계산은 BigDecimal" 명시 |
+
+**P2 수정 (성능)**:
+
+| 발견 사항 | 수정 내용 |
+|---|---|
+| `calculateEmissions()` 루프 내 N회 배출계수 DB 조회 | `Map<String, EmissionFactor> factorCache` 도입 — 동일 카테고리 2번째 조회부터 캐시 히트 |
+| `deriveScopeFromCategory()` — SCOPE2_LB vs SCOPE2_MB 구분 불가 | `category.endsWith("_MB")` 선 체크 후 `_LB` 판별 로직 추가 |
+
+**P3 수정 (코드 품질)**:
+
+| 발견 사항 | 수정 내용 |
+|---|---|
+| `ActivityDataJpaEntity` — 상태 전이 메서드 부재 | `submit(actorId)`, `approve(actorId)`, `reject(actorId, reason)` 명시적 전이 메서드 추가 (01-domain-architecture.md 승인 상태 기계 원칙) |
+
+전체 테스트 결과: ✅ **BUILD SUCCESSFUL** (94 tests, 0 failures)
 
 ---
 
