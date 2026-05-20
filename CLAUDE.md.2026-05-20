@@ -1,0 +1,137 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+> **선행 프로젝트**: `../esg-t1` — MVP Phase 0~12 완성본. esg-t2는 esg-t1의 아키텍처 교훈과 규제 업데이트(KSSB 1/2, 2026-02-26)를 반영한 2세대 프로젝트다.  
+> **문서 읽는 순서**: `docs/regulatory.md` → `docs/prd.md` → `docs/spec.md` → `docs/plan.md` → `docs/task.md` → `docs/superpowers/plans/` → 본 파일
+
+---
+
+## 프로젝트 개요
+
+ESG 공시지원 시스템 2세대. KSSB 1/2(한국판 IFRS S1/S2), Scope 3, 다법인 연결, 외부 검증 모드를 MVP에 포함한 엔터프라이즈 공시 플랫폼.
+
+- **Group**: `ai.claudecode` | **Artifact**: `esgt2` | **Base package**: `ai.claudecode.esgt2`
+- **초기 생성**: Spring Initializr (https://start.spring.io)으로 Gradle Wrapper(`gradlew`, `gradlew.bat`, `gradle/wrapper/`)만 생성. `build.gradle.kts`는 impl plan의 코드로 교체. Initializr 생성물을 그대로 쓰지 말 것.
+
+---
+
+## 기술 스택
+
+| 구성요소 | 버전/선택 |
+|---|---|
+| Java | 25 LTS (Virtual Threads, Record Patterns) |
+| Spring Boot | 4.0.x (Spring Framework 7) |
+| Spring Modulith | `@ApplicationModule` + `ModularityTest` 경계 강제 |
+| JPA / Hibernate | Jakarta Persistence 3.2 / Hibernate 7 |
+| DB (운영·테스트) | PostgreSQL 18 (TestContainers) |
+| DB (로컬 보조) | H2 |
+| Build | Gradle Kotlin DSL |
+| API 문서 | springdoc-openapi (OpenAPI 3.1) |
+| 관측성 | OpenTelemetry (Spring Boot 4 내장) |
+| Frontend | Next.js (latest) + TypeScript strict + Tailwind 4.x |
+
+> **UI 개발 게이트**: UI Phase 시작 전 반드시 사용자 승인 후 착수.
+
+---
+
+## 명령어
+
+```bash
+# 백엔드
+./gradlew build
+./gradlew bootRun
+./gradlew test
+./gradlew test --tests "ai.claudecode.esgt2.domain.DataPointTest"
+./gradlew test --tests "ai.claudecode.esgt2.domain.DataPointTest.정정시_새_버전이_추가된다"
+./gradlew test --tests "*ModularityTest"
+./gradlew generateOpenApiDocs
+./gradlew spotlessApply
+
+# 프론트엔드
+cd frontend && npm run dev
+cd frontend && npm run typecheck
+cd frontend && npm run build
+```
+
+---
+
+## 아키텍처 개요
+
+```
+ai.claudecode.esgt2
+├── ghg/     # GHG 배출량 계산 (Scope 1·2·3, 연결 집계)
+├── entity/  # 법인·테넌트 관리
+├── audit/   # AuditLog + Hash Chain (@Auditable AOP)
+├── vw/      # Verification Workspace (외부 검증인)
+├── rpt/     # 보고서 생성 (KSSB 2, PDF)
+├── supply/  # 공급업체 포털 (Scope 3 Cat.1)
+└── shared/  # 공통 Value Object, Event, Exception
+```
+
+각 모듈: `api/` (공개) · `domain/` (순수 Java) · `infra/` (JPA·외부) · `internal/` (비공개)  
+모듈 간 동기: `api/` 인터페이스만 허용 | 비동기: `ApplicationEventPublisher` 사용
+
+---
+
+## 코딩 규칙
+
+세부 규칙은 `.claude/rules/` 파일 참조. 경로 조건에 따라 자동 로드된다.
+
+| 파일 | 내용 | 로드 조건 |
+|---|---|---|
+| `00-priority.md` | **규칙 우선순위 P0~P3** — 충돌 시 P0(테넌트 격리·감사 무결성) 절대 우선 | 항상 |
+| `01-domain-architecture.md` | Domain≠Entity, Default*, 불변성, 검증 우선, Lombok, SQL 예약어 | 항상 |
+| `02-testing.md` | TDD, TestContainers, Mock DB 금지, 테스트 격리 | `src/test/**` |
+| `03-security.md` | RBAC, RLS, 크로스테넌트 방어, JWT, Webhook 서명 | 항상 |
+| `04-api-design.md` | OpenAPI 어노테이션, GlobalExceptionHandler 핸들러, REST 규칙 | `**/controller/**` |
+| `05-async-concurrency.md` | @Async+@Transactional 분리, PESSIMISTIC_WRITE, Outbox | `**/service/**` |
+| `06-emission-calculation.md` | BigDecimal 전용, factorAt 재현성, Scope 3 집계 | `**/ghg/**` |
+| `07-formula-dsl.md` | DoS 방어 상수, test_cases 게이트, YAML 로더 멱등성 | `**/formula/**` |
+| `08-persistence.md` | Flyway 멀티 로케이션, Append-only Repository, N+1 방지 | `**/infra/**` |
+| `09-scheduler.md` | zone=Asia/Seoul, @ConditionalOnProperty 격리 | `**/*Scheduler*.java` |
+| `10-evidence-files.md` | DigestInputStream, 경로 순회 방어, SHA-256 | `**/evidence/**` |
+| `11-modulith-events.md` | 모듈 경계, @Auditable 적용 범위, @ApplicationModuleListener | `**/ghg/**`, `**/entity/**`, `**/audit/**`, `**/vw/**`, `**/rpt/**`, `**/supply/**` |
+
+---
+
+## 개발 워크플로우
+
+1. `docs/task.md` Phase 체크리스트 — 완료 즉시 체크
+2. Phase 종료 시 `docs/code-review.md` 리뷰 기록
+3. 이슈 발견 → `docs/fix.md` 등록 → TDD로 해결
+4. 학습 인사이트 → `docs/insight.md` 누적
+
+### 변경·추가 전 검토 원칙 (필수)
+
+새로운 요소를 추가하거나 기존 요소를 변경하기 **전에** 반드시 다음을 수행한다.
+
+- **의존성 추가**: 이미 전이 의존성으로 존재하는지 먼저 확인 (`./gradlew dependencies` 또는 BOM 확인). 중복 추가 금지.
+- **파일·클래스 추가**: 동일 역할이 이미 존재하는지 `Glob`·`Grep`으로 확인 후 진행.
+- **설정 변경**: 변경 전 현재 상태를 Read로 읽고, 변경 후 효과를 예측한 다음 적용.
+- **오류 수정**: 원인을 직접 확인(로그, 소스 코드, 타입 정보)한 뒤 수정. 추론으로 수정하지 않는다.
+
+"아마 이럴 것이다"로 변경을 적용하지 않는다. 확인 후 최선의 선택을 한 근거를 갖고 진행한다.
+
+### esg-t1 참고 원칙
+
+> **esg-t1은 참고일 뿐이다.** 문제가 발생하면 esg-t1 코드를 그대로 복사하지 말고, 더 나은 방법을 찾아 접근한다.  
+> esg-t1의 교훈(L-0-01~L-0-16)은 `docs/insight.md`에 정리되어 있으며, 같은 실수를 반복하지 않기 위한 참조용이다. esg-t2는 독립적인 2세대 프로젝트로, esg-t1 방식이 최선이 아닐 수 있다.
+
+---
+
+## 문서 구조
+
+```
+docs/
+├── regulatory.md   # ESG 규제 레퍼런스 (KSSB, GHG Protocol)
+├── prd.md          # 제품 요구사항
+├── spec.md         # 기술 명세 (ERD, 모듈 설계, 보안 모델)
+├── plan.md         # 실행 계획 Phase 0~12
+├── task.md         # Phase별 태스크 체크리스트
+├── code-review.md  # 코드 리뷰 체크리스트 & 이력
+├── fix.md          # 이슈 트래킹
+├── insight.md      # 학습 인사이트 (esg-t1 교훈 L-0-01~L-0-16)
+├── openapi.yml     # 빌드 자동 생성
+└── adr/            # ADR-001~007
+```
