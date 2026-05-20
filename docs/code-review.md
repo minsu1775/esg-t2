@@ -472,6 +472,50 @@
 
 ---
 
+### Phase 6A 재검토: 5개 영역 심층 리뷰 (2026-05-20)
+
+> 관점: ① 예외 처리 HTTP 상태 코드 ② RLS 컨텍스트 완결성 ③ 크로스 테넌트 방어 ④ 아키텍처 순수성 ⑤ 입력 유효성
+
+**① 예외 처리 — HTTP 상태 코드 정확성**
+
+| 심각도 | 항목 | 수정 내용 |
+|---|---|---|
+| **P1** | `CsvActivityDataParser.parse()` 예외(`IllegalArgumentException`)가 `GlobalExceptionHandler`의 `Exception.class` → **500** 반환 | `DefaultIntakeService.uploadCsv()`에서 `IllegalArgumentException` → `EsgException(CSV_PARSE_FAILED)` 래핑. `IOException`도 동일하게 처리. → **400** 반환 |
+| - | `CsvActivityDataParser`가 `Resource` 대신 `InputStream` 수용 | Spring 의존 제거 — 동시에 발생한 아키텍처 위반 수정 |
+
+**② RLS 컨텍스트 완결성 — Webhook 경로 누락**
+
+| 심각도 | 항목 | 수정 내용 |
+|---|---|---|
+| **P1** | JWT 없는 Webhook 요청: `TenantContextInterceptor`의 `auth == null` 조건으로 즉시 반환 → `app.current_tenant_id` 미설정. 운영 환경 RLS 무력화 | `TenantContextInterceptor`에 `WEBHOOK_TENANT_PATTERN` 추가. URL에서 tenantId 추출 후 `set_config` 호출 |
+| - | 테스트 환경은 `db/migration-pg` 미실행(RLS 미활성) → 테스트에서 감지 불가 | **이 유형의 버그는 통합 테스트에서 발견 불가** — 운영 배포 전 RLS 정책 점검 필수 |
+
+**③ 크로스 테넌트 방어 — entityId 소속 검증**
+
+| 심각도 | 항목 | 수정 내용 |
+|---|---|---|
+| **P1** | `DefaultIntakeService.uploadCsv(entityId)` — entityId가 tenantId에 속하는지 검증 없음 | `EntityManagementService.findById(tenantId, entityId)` 추가. 불일치 시 `EsgException(VALIDATION_FAILED)` |
+| **P1** | `receiveWebhook(items)` — 각 `item.entityId()` 소속 검증 없음 | unique entityId 일괄 검증 후 미소속 존재 시 일괄 거부 |
+| - | Phase 4에서 `DefaultConsolidationService`에 동일 패턴 적용됐으나 Intake 경로 누락 | 패턴 불일치 — 신규 서비스 구현 체크리스트에 "entityId 소속 검증" 항목 추가 필요 |
+
+**④ 아키텍처 순수성 — domain 패키지 Spring 의존**
+
+| 심각도 | 항목 | 수정 내용 |
+|---|---|---|
+| P2 | `CsvActivityDataParser`(domain/)가 `import org.springframework.core.io.Resource` — 01-domain-architecture.md "Domain = 순수 Java" 위반 | 시그니처 변경: `parse(Resource)` → `parse(InputStream)`. 호출 측에서 `csvFile.getInputStream()` 전달 |
+
+**⑤ 입력 유효성 — 음수 quantity**
+
+| 심각도 | 항목 | 수정 내용 |
+|---|---|---|
+| P3 | CSV/Webhook에서 음수 quantity 입력 시 ERROR 없이 DB 저장 | `ActivityDataRowImporter.importRow()`에 `row.quantity().signum() <= 0` 검증 추가 → ERROR 반환 |
+
+**테스트 결과**: ✅ **BUILD SUCCESSFUL** (147 tests, 0 failures)
+- `IntakeIntegrationTest` +2건 추가: `음수_quantity_행은_ERROR_반환`, `존재하지_않는_entityId로_CSV_업로드_시_예외`
+- `CsvActivityDataParserTest` InputStream 시그니처 반영
+
+---
+
 ## 3. 공통 이슈 트래킹
 
 > 같은 이슈가 3회 이상 반복되면 체크리스트에 항목 추가
@@ -492,7 +536,7 @@
 | Phase 3 | YAML 로더 멱등성, 배출계수 계산 `BigDecimal` 전용(float/double 금지), `reporting_year` SQL 예약어 방지, `factorAt` 재현성 테스트 |
 | Phase 4 | Operational Control GHG Protocol 준수 (직접 지배 체인), 크로스 테넌트 rootEntityId 검증, N+1 쿼리 |
 | Phase 5 | ✅ Scope 3 95% 임계값 계산 로직, meets_95pct_threshold 컬럼 매핑, 테스트 격리(@BeforeEach FK), AuditAspect JWT 컨텍스트 |
-| Phase 6 | 공급업체 데이터 격리, Webhook 시그니처 검증 |
+| Phase 6 | ✅ CSV 오류 HTTP 상태 코드(400), RLS 컨텍스트 완결성(permitAll 경로), entityId 테넌트 소속 검증, quantity 음수 방어, @PreAuthorize 면제 문서화 |
 | Phase 7 | KSSB 2 항목 완전성 (미구현 항목 없음), YoY 계산 |
 | Phase 8 | 스냅샷 불변성, VERIFIER RLS 격리 |
 | Phase 9~11 | XSS 방어, RBAC 메뉴 분기, 접근성 |

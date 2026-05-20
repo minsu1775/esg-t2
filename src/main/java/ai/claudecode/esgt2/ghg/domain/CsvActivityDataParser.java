@@ -2,8 +2,8 @@ package ai.claudecode.esgt2.ghg.domain;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
-import org.springframework.core.io.Resource;
 
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -24,9 +24,9 @@ public final class CsvActivityDataParser {
 
     private CsvActivityDataParser() {}
 
-    public static List<CsvRow> parse(Resource resource) {
+    public static List<CsvRow> parse(InputStream inputStream) {
         List<CsvRow> rows = new ArrayList<>();
-        try (var reader = new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8);
+        try (var reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
              var csvParser = FORMAT.parse(reader)) {
 
             var headerMap = csvParser.getHeaderMap();

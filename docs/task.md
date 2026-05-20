@@ -273,6 +273,18 @@
 | T-6-14 | **[예방]** `feat:` CSV 업로드 행별 독립 `@Transactional(REQUIRES_NEW)` 적용 | DONE | ActivityDataRowImporter |
 | T-6-15 | **[예방]** `test:` `@Async` 메서드에서 `@Transactional` 없음 확인 (별도 빈 분리) | DONE | ClassPathScanningCandidateComponentProvider 사용 |
 
+### Phase 6A 재검토 수정 (2026-05-20)
+
+| ID | 태스크 | 상태 | 비고 |
+|---|---|---|---|
+| T-6R-01 | **[P1]** `test:` CSV 음수 quantity → ERROR 반환 + 존재하지 않는 entityId → 예외 | DONE | IntakeIntegrationTest +2건 |
+| T-6R-02 | **[P1]** `fix:` `CsvActivityDataParser.parse()` 오류 → 500 반환 수정 | DONE | `DefaultIntakeService`에서 `IllegalArgumentException` → `EsgException(CSV_PARSE_FAILED)` 래핑. 400 반환 |
+| T-6R-03 | **[P1]** `fix:` Webhook `TenantContextInterceptor` RLS 갭 수정 | DONE | WEBHOOK_TENANT_PATTERN fallback 추가 — JWT 없는 경로에서도 `app.current_tenant_id` 설정 |
+| T-6R-04 | **[P1]** `fix:` CSV/Webhook `entityId` 테넌트 소속 검증 추가 | DONE | `EntityManagementService.findById(tenantId, entityId)` 적용 (Phase 4 ConsolidationService 패턴 동일) |
+| T-6R-05 | **[P2]** `fix:` `CsvActivityDataParser` — Spring `Resource` → `InputStream` 시그니처 변경 | DONE | `domain/` 패키지 순수 Java 원칙 회복 |
+| T-6R-06 | **[P3]** `fix:` `ActivityDataRowImporter` — 음수 quantity 검증 추가 | DONE | `quantity.signum() <= 0` → ERROR 반환 |
+| T-6R-07 | **[P3]** `docs:` `IntakeController.receiveWebhook()` `@PreAuthorize` 면제 사유 주석 | DONE | HMAC 인증 대체 명시 |
+
 ---
 
 ## Phase 6-B: 정정·재공시 워크플로우 & Formula DSL 배포

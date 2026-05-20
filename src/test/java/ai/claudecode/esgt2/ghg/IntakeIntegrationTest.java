@@ -194,6 +194,36 @@ class IntakeIntegrationTest extends AbstractIntegrationTest {
             .anyMatch(ad -> "SAP_ERP".equals(ad.getDataSource()));
     }
 
+    // T-6R-01: 음수 quantity → ERROR 행 반환
+    @Test
+    void 음수_quantity_행은_ERROR_반환() {
+        String csvContent =
+            "reporting_year,category,sub_category,quantity,unit,country_code,data_source,data_quality,lifetime_years\n" +
+            "2025,SCOPE3_CAT1,ITEM_OK,10000,KRW,KR,MANUAL,,\n" +
+            "2025,SCOPE3_CAT1,ITEM_NEG,-500,KRW,KR,MANUAL,,\n";
+        var csv = new ByteArrayResource(csvContent.getBytes(StandardCharsets.UTF_8));
+
+        CsvUploadResponse result = intakeService.uploadCsv(TENANT_ID, entityId, csv);
+
+        assertThat(result.successCount()).isEqualTo(1);
+        assertThat(result.errorCount()).isEqualTo(1);
+        assertThat(result.nonSuccessRows().get(0).message()).contains("quantity는 양수여야 합니다");
+    }
+
+    // T-6R-02: 존재하지 않는 entityId → 예외 발생
+    @Test
+    void 존재하지_않는_entityId로_CSV_업로드_시_예외() {
+        var unknownEntityId = UUID.fromString("00000000-0000-0000-0000-000000009999");
+        var csv = new ByteArrayResource(
+            ("reporting_year,category,sub_category,quantity,unit,country_code,data_source,data_quality,lifetime_years\n" +
+             "2025,SCOPE3_CAT1,ITEM_A,10000,KRW,KR,MANUAL,,\n")
+                .getBytes(StandardCharsets.UTF_8));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                () -> intakeService.uploadCsv(TENANT_ID, unknownEntityId, csv))
+            .isInstanceOf(ai.claudecode.esgt2.shared.exception.EsgException.class);
+    }
+
     private ByteArrayResource buildCsv(int rowCount) {
         var sb = new StringBuilder(
             "reporting_year,category,sub_category,quantity,unit,country_code,data_source,data_quality,lifetime_years\n");

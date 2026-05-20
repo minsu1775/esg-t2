@@ -61,6 +61,8 @@ public class IntakeController {
                description = "외부 ERP/시스템에서 HMAC-SHA256 서명으로 데이터를 전송합니다.")
     @ApiResponse(responseCode = "200", description = "처리 결과")
     @ApiResponse(responseCode = "401", description = "Webhook 서명 불일치")
+    // @PreAuthorize 면제: JWT 없는 외부 시스템 호출. HMAC-SHA256 서명 검증이 인증을 대체한다 (03-security.md Webhook 항목).
+    // SecurityConfig에 permitAll 등록됨.
     @PostMapping("/tenants/{tenantId}/webhook")
     public ResponseEntity<CsvUploadResponse> receiveWebhook(
             @Parameter(description = "테넌트 ID") @PathVariable UUID tenantId,

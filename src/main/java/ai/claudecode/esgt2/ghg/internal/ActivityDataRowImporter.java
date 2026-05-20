@@ -31,6 +31,10 @@ class ActivityDataRowImporter {
                 return ImportRowResult.error(row.lineNumber(),
                     "필수 필드 누락: reporting_year, category, quantity, unit, country_code");
             }
+            if (row.quantity().signum() <= 0) {
+                return ImportRowResult.error(row.lineNumber(),
+                    "quantity는 양수여야 합니다: " + row.quantity());
+            }
 
             boolean duplicate = activityDataRepository
                 .existsByTenantIdAndEntityIdAndReportingYearAndCategoryAndSubCategoryAndDataSource(

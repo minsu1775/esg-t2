@@ -83,7 +83,50 @@ _버그 발생 시 추가 예정_
 
 ## Phase 6: 데이터 수집 파이프라인
 
-_버그 발생 시 추가 예정_
+### BUG-P6-01 [P1 · FIXED] CSV 파싱 오류 → 500 반환
+
+- **발견 Phase**: Phase 6 재검토 (2026-05-20)
+- **심각도**: HIGH
+- **증상**: 필수 헤더 누락·파싱 불가 CSV 업로드 시 400 대신 **500** 반환. 클라이언트가 오류 원인 파악 불가.
+- **원인**: `CsvActivityDataParser.parse()`가 `IllegalArgumentException`을 던지고, `GlobalExceptionHandler`의 `Exception.class` 핸들러가 500으로 처리.
+- **영향**: CSV 업로드 API에서 잘못된 파일을 보내는 모든 클라이언트.
+- **해결**: `DefaultIntakeService.uploadCsv()`에서 `IllegalArgumentException` → `EsgException(CSV_PARSE_FAILED)` 래핑. `GlobalExceptionHandler`의 기존 `CSV_PARSE_FAILED → 400` 매핑이 동작.
+- **재발 방지**: domain 객체가 던지는 예외는 service 계층에서 EsgException으로 변환.
+
+### BUG-P6-02 [P1 · FIXED] Webhook RLS 컨텍스트 미설정
+
+- **발견 Phase**: Phase 6 재검토 (2026-05-20)
+- **심각도**: HIGH
+- **증상**: JWT 없는 Webhook 요청에서 `TenantContextInterceptor`가 `auth == null` 조건으로 즉시 반환 → `app.current_tenant_id` 미설정 → 운영 환경 RLS 무력화.
+- **원인**: `TenantContextInterceptor`가 SecurityContext의 인증 객체만 읽고, `permitAll` 경로(Webhook)에서는 SecurityContext가 비어 있음. MVC Interceptor는 Security Filter 이후 실행되므로, 컨트롤러에서 SecurityContext를 설정해도 이미 인터셉터는 지나간 상태.
+- **영향**: 운영 환경에서 Webhook 수신 시 RLS 정책이 활성화된 테이블에 대한 쿼리가 잘못 동작할 수 있음. (테스트 환경은 `db/migration-pg` 미실행으로 RLS 미활성화 — 테스트에서 감지 불가)
+- **해결**: `TenantContextInterceptor`에 Webhook URL 패턴(`/api/v1/intake/tenants/{tenantId}/webhook`) fallback 추가. URL에서 tenantId를 추출해 `set_config` 호출.
+- **재발 방지**: `permitAll` 경로가 추가될 때마다 TenantContextInterceptor에서 RLS 컨텍스트 설정 여부 확인.
+
+### BUG-P6-03 [P1 · FIXED] entityId 테넌트 소속 미검증
+
+- **발견 Phase**: Phase 6 재검토 (2026-05-20)
+- **심각도**: HIGH
+- **증상**: CSV 업로드(`entityId` 경로 파라미터) 및 Webhook(`item.entityId()`) 모두 테넌트에 속하지 않는 법인 ID를 검증하지 않고 데이터를 저장.
+- **원인**: Phase 4 `DefaultConsolidationService`에 적용한 `EntityManagementService.findById(tenantId, entityId)` 패턴이 Intake 경로에 미적용.
+- **영향**: 존재하지 않거나 다른 테넌트 소속의 법인 ID로 활동 데이터가 저장 가능 → FK 무결성 오류 또는 데이터 오염.
+- **해결**: `DefaultIntakeService.uploadCsv()`에서 단건 entityId 검증. `receiveWebhook()`에서 unique entityId 일괄 검증 후 미소속 법인이 있으면 `EsgException(VALIDATION_FAILED)` throw.
+- **재발 방지**: 새 데이터 수집 경로 추가 시 entityId 검증을 첫 번째 단계로 명시.
+
+### BUG-P6-04 [P2 · FIXED] CsvActivityDataParser — domain 패키지에서 Spring Resource 의존
+
+- **발견 Phase**: Phase 6 재검토 (2026-05-20)
+- **심각도**: MEDIUM
+- **증상**: `domain/` 패키지 규칙("순수 Java") 위반. `import org.springframework.core.io.Resource` 포함.
+- **원인**: 초기 구현 시 편의를 위해 Spring `Resource`를 직접 받도록 설계.
+- **해결**: `parse(Resource)` → `parse(InputStream)`으로 시그니처 변경. 호출 측(`DefaultIntakeService`)에서 `csvFile.getInputStream()` 전달.
+
+### BUG-P6-05 [P3 · FIXED] 음수 quantity 검증 없음
+
+- **발견 Phase**: Phase 6 재검토 (2026-05-20)
+- **심각도**: LOW
+- **증상**: CSV/Webhook에서 음수 quantity를 입력해도 ERROR 없이 DB에 저장됨.
+- **해결**: `ActivityDataRowImporter.importRow()`에서 `row.quantity().signum() <= 0` 검증 추가 → ERROR 반환.
 
 ---
 

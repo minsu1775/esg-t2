@@ -1,8 +1,8 @@
 package ai.claudecode.esgt2.ghg.domain;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.core.io.ByteArrayResource;
 
+import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -12,8 +12,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class CsvActivityDataParserTest {
 
-    private static ByteArrayResource csv(String content) {
-        return new ByteArrayResource(content.getBytes(StandardCharsets.UTF_8));
+    private static ByteArrayInputStream csv(String content) {
+        return new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));
     }
 
     @Test
@@ -92,7 +92,7 @@ class CsvActivityDataParserTest {
     }
 
     @Test
-    void 필수_헤더_누락_시_예외() {
+    void 필수_헤더_누락_시_예외() throws Exception {
         assertThatThrownBy(() -> CsvActivityDataParser.parse(csv("not,a,valid\ncsv")))
             .isInstanceOf(IllegalArgumentException.class);
     }

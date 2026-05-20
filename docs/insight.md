@@ -428,7 +428,43 @@ _Phase 완료 후 내용 추가 예정_
 
 ## Phase 6: 데이터 수집 파이프라인
 
-_Phase 완료 후 내용 추가 예정_
+### L-P6-01: domain 패키지에서 Spring Resource 의존 — InputStream 시그니처 원칙
+
+**현상**: `CsvActivityDataParser`를 처음에 `parse(Resource)` 시그니처로 구현했다. 호출 측에서 Spring `Resource`를 바로 전달하면 편리하지만, `domain/` 패키지에 Spring 의존성이 생긴다.
+
+**교훈**: `domain/` 패키지의 순수 Java 원칙을 지키려면 파서 시그니처를 `parse(InputStream)`으로 정의한다. Spring `Resource`를 다루는 것은 `Service` 또는 `infra` 계층의 책임이다 (`csvFile.getInputStream()` 호출).
+
+**esg-t2 적용**: `CsvActivityDataParser.parse(InputStream)` — 수정 완료.
+
+---
+
+### L-P6-02: `permitAll` 경로의 RLS 컨텍스트 갭 — TenantContextInterceptor 패턴
+
+**현상**: Webhook 경로는 `SecurityConfig.permitAll()`로 등록되어 JWT 필터를 통과한다. `TenantContextInterceptor`는 SecurityContext가 비어 있으면 `app.current_tenant_id`를 설정하지 않고 반환한다. 컨트롤러에서 SecurityContext를 설정해도 MVC Interceptor는 이미 지나간 상태이다.
+
+**교훈**: Spring MVC 실행 순서는 `Security Filter → MVC Interceptor → Controller`. `permitAll` 경로에서 컨트롤러 내 SecurityContext 설정은 MVC Interceptor에 영향을 미치지 않는다. RLS 컨텍스트가 필요한 모든 경로는 MVC Interceptor 단계에서 tenantId를 확인할 수 있어야 한다.
+
+**esg-t2 적용**: `TenantContextInterceptor`에 Webhook URL 패턴 fallback 추가. 신규 `permitAll` 경로 추가 시 동일한 패턴 적용.
+
+---
+
+### L-P6-03: REQUIRES_NEW 트랜잭션과 외부 @Auditable — 2계층 트랜잭션 설계
+
+**현상**: CSV 행별 독립 처리를 위해 `REQUIRES_NEW`가 필요하고, 전체 처리 결과에 대한 감사 로그를 위해 외부 `@Transactional`도 필요하다. 이 두 요구가 충돌하는 것처럼 보인다.
+
+**교훈**: `DefaultIntakeService`(외부 `@Transactional` + `@Auditable`) → `ActivityDataRowImporter`(`REQUIRES_NEW`) 2계층 구조가 정답이다. 외부 트랜잭션은 Outbox 이벤트 저장용, 내부 REQUIRES_NEW는 행별 독립 커밋용으로 책임이 명확히 분리된다. 두 빈을 분리해야 REQUIRES_NEW가 실제로 적용됨(같은 빈 내 self-invocation은 AOP 우회).
+
+**esg-t2 적용**: Phase 6A에서 검증된 패턴. 이후 유사한 "배치 처리 + 감사 로그" 요구 시 동일 패턴 적용.
+
+---
+
+### L-P6-04: HMAC Webhook의 @PreAuthorize 면제 — 보안 규칙 예외 문서화
+
+**현상**: `IntakeController.receiveWebhook()`에 `@PreAuthorize`를 붙이지 않았다. 코드 리뷰 규칙("모든 컨트롤러 메서드 @PreAuthorize 필수")과 충돌한다.
+
+**교훈**: HMAC-SHA256 검증이 JWT 역할 기반 인증을 대체하는 경우, `@PreAuthorize` 면제가 합리적이다. 그러나 이것이 규칙 위반처럼 보이지 않도록 **면제 사유 주석을 코드에 명시**해야 한다. 주석 없이 누락된 `@PreAuthorize`는 감사(Audit) 도구에서 취약점으로 잘못 보고될 수 있다.
+
+**esg-t2 적용**: `IntakeController.receiveWebhook()` 위에 `// @PreAuthorize 면제: HMAC-SHA256 서명 검증이 인증을 대체한다` 주석 추가.
 
 ---
 
