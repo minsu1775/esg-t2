@@ -71,4 +71,49 @@ class Scope3CalculatorTest {
                 .isInstanceOf(IllegalArgumentException.class);
         }
     }
+
+    @Nested
+    class Cat11 {
+
+        @Test
+        void 생애주기_배출_연간_귀속_계산_정확도() {
+            // TV 1,000대 × 0.5 tCO2e/대 ÷ 8년 = 62.500000 tCO2e/year
+            BigDecimal result = Scope3Cat11Calculator.computeAnnualEmission(
+                new BigDecimal("1000"), new BigDecimal("0.5"), 8);
+            assertThat(result).isEqualByComparingTo(new BigDecimal("62.500000"));
+        }
+
+        @Test
+        void 사용기간이_1년이면_전체_생애주기_배출_그대로() {
+            BigDecimal result = Scope3Cat11Calculator.computeAnnualEmission(
+                new BigDecimal("100"), new BigDecimal("2.0"), 1);
+            assertThat(result).isEqualByComparingTo(new BigDecimal("200.000000"));
+        }
+
+        @Test
+        void 사용기간_0이면_예외() {
+            assertThatThrownBy(() ->
+                Scope3Cat11Calculator.computeAnnualEmission(
+                    new BigDecimal("1000"), new BigDecimal("0.5"), 0))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("사용기간");
+        }
+
+        @Test
+        void 사용기간_null이면_예외() {
+            assertThatThrownBy(() ->
+                Scope3Cat11Calculator.computeAnnualEmission(
+                    new BigDecimal("1000"), new BigDecimal("0.5"), null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("사용기간");
+        }
+
+        @Test
+        void 음수_판매량은_예외() {
+            assertThatThrownBy(() ->
+                Scope3Cat11Calculator.computeAnnualEmission(
+                    new BigDecimal("-10"), new BigDecimal("0.5"), 5))
+                .isInstanceOf(IllegalArgumentException.class);
+        }
+    }
 }
