@@ -52,6 +52,9 @@ dependencies {
     // CSV 업로드 파이프라인
     implementation("org.apache.commons:commons-csv:1.12.0")
 
+    // PDF 보고서 렌더링 (Phase 7: rpt 모듈)
+    implementation("org.apache.pdfbox:pdfbox:3.0.3")
+
     // 이메일 발송 (공급업체 초대·리마인더)
     implementation("org.springframework.boot:spring-boot-starter-mail")
 
