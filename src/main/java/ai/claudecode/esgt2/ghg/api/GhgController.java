@@ -10,7 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -34,9 +34,10 @@ public class GhgController {
     @PostMapping("/entities/{entityId}/activity-data")
     @PreAuthorize("hasRole('ESG_MANAGER')")
     public ResponseEntity<ActivityDataResponse> createActivityData(
-            @AuthenticationPrincipal JwtAuthentication auth,
+            Authentication authentication,
             @PathVariable UUID entityId,
             @RequestBody @Valid CreateActivityDataRequest request) {
+        var auth = (JwtAuthentication) authentication;
         var response = ghgService.createActivityData(auth.getTenantId(), entityId, request);
         return ResponseEntity.created(
             URI.create("/api/v1/ghg/entities/" + entityId + "/activity-data/" + response.id()))
@@ -48,9 +49,10 @@ public class GhgController {
     @GetMapping("/entities/{entityId}/activity-data")
     @PreAuthorize("hasAnyRole('ESG_MANAGER', 'ESG_VIEWER')")
     public ResponseEntity<List<ActivityDataResponse>> findActivityData(
-            @AuthenticationPrincipal JwtAuthentication auth,
+            Authentication authentication,
             @PathVariable UUID entityId,
             @RequestParam int reportingYear) {
+        var auth = (JwtAuthentication) authentication;
         return ResponseEntity.ok(ghgService.findActivityData(auth.getTenantId(), entityId, reportingYear));
     }
 
@@ -60,9 +62,10 @@ public class GhgController {
     @PostMapping("/entities/{entityId}/calculations")
     @PreAuthorize("hasRole('ESG_MANAGER')")
     public ResponseEntity<List<EmissionRecordResponse>> calculateEmissions(
-            @AuthenticationPrincipal JwtAuthentication auth,
+            Authentication authentication,
             @PathVariable UUID entityId,
             @RequestParam int reportingYear) {
+        var auth = (JwtAuthentication) authentication;
         var records = ghgService.calculateEmissions(auth.getTenantId(), entityId, reportingYear);
         return ResponseEntity.status(201).body(records);
     }
@@ -72,9 +75,10 @@ public class GhgController {
     @GetMapping("/entities/{entityId}/emission-records")
     @PreAuthorize("hasAnyRole('ESG_MANAGER', 'ESG_VIEWER', 'VERIFIER')")
     public ResponseEntity<List<EmissionRecordResponse>> findEmissionRecords(
-            @AuthenticationPrincipal JwtAuthentication auth,
+            Authentication authentication,
             @PathVariable UUID entityId,
             @RequestParam int reportingYear) {
+        var auth = (JwtAuthentication) authentication;
         return ResponseEntity.ok(ghgService.findEmissionRecords(auth.getTenantId(), entityId, reportingYear));
     }
 
@@ -87,11 +91,12 @@ public class GhgController {
     @PostMapping("/entities/{rootEntityId}/consolidations")
     @PreAuthorize("hasRole('ESG_MANAGER')")
     public ResponseEntity<ConsolidationResponse> consolidate(
-            @AuthenticationPrincipal JwtAuthentication auth,
+            Authentication authentication,
             @PathVariable UUID rootEntityId,
             @Parameter(description = "보고 연도", example = "2025") @RequestParam int reportingYear,
             @Parameter(description = "연결 방법 (EQUITY | OPERATIONAL_CONTROL)", example = "EQUITY")
             @RequestParam ConsolidationMethod method) {
+        var auth = (JwtAuthentication) authentication;
         var response = consolidationService.consolidate(
             auth.getTenantId(), rootEntityId, reportingYear, method);
         return ResponseEntity.status(201).body(response);
@@ -102,9 +107,10 @@ public class GhgController {
     @GetMapping("/entities/{rootEntityId}/consolidations")
     @PreAuthorize("hasAnyRole('ESG_MANAGER', 'ESG_VIEWER')")
     public ResponseEntity<List<ConsolidationResponse>> findConsolidations(
-            @AuthenticationPrincipal JwtAuthentication auth,
+            Authentication authentication,
             @PathVariable UUID rootEntityId,
             @Parameter(description = "보고 연도", example = "2025") @RequestParam int reportingYear) {
+        var auth = (JwtAuthentication) authentication;
         return ResponseEntity.ok(
             consolidationService.findConsolidations(auth.getTenantId(), rootEntityId, reportingYear));
     }
@@ -116,9 +122,10 @@ public class GhgController {
     @PostMapping("/entities/{entityId}/scope3/cat1/calculations")
     @PreAuthorize("hasRole('ESG_MANAGER')")
     public ResponseEntity<List<EmissionRecordResponse>> calculateScope3Cat1(
-            @AuthenticationPrincipal JwtAuthentication auth,
+            Authentication authentication,
             @PathVariable UUID entityId,
             @Parameter(description = "보고 연도", example = "2025") @RequestParam int reportingYear) {
+        var auth = (JwtAuthentication) authentication;
         return ResponseEntity.status(201)
             .body(scope3Service.calculateCat1(auth.getTenantId(), entityId, reportingYear));
     }
@@ -129,9 +136,10 @@ public class GhgController {
     @PostMapping("/entities/{entityId}/scope3/cat2/calculations")
     @PreAuthorize("hasRole('ESG_MANAGER')")
     public ResponseEntity<List<EmissionRecordResponse>> calculateScope3Cat2(
-            @AuthenticationPrincipal JwtAuthentication auth,
+            Authentication authentication,
             @PathVariable UUID entityId,
             @Parameter(description = "보고 연도", example = "2025") @RequestParam int reportingYear) {
+        var auth = (JwtAuthentication) authentication;
         return ResponseEntity.status(201)
             .body(scope3Service.calculateCat2(auth.getTenantId(), entityId, reportingYear));
     }
@@ -142,9 +150,10 @@ public class GhgController {
     @PostMapping("/entities/{entityId}/scope3/cat11/calculations")
     @PreAuthorize("hasRole('ESG_MANAGER')")
     public ResponseEntity<List<EmissionRecordResponse>> calculateScope3Cat11(
-            @AuthenticationPrincipal JwtAuthentication auth,
+            Authentication authentication,
             @PathVariable UUID entityId,
             @Parameter(description = "보고 연도", example = "2025") @RequestParam int reportingYear) {
+        var auth = (JwtAuthentication) authentication;
         return ResponseEntity.status(201)
             .body(scope3Service.calculateCat11(auth.getTenantId(), entityId, reportingYear));
     }
@@ -155,9 +164,10 @@ public class GhgController {
     @PostMapping("/entities/{entityId}/scope3/coverage-report")
     @PreAuthorize("hasRole('ESG_MANAGER')")
     public ResponseEntity<Scope3CoverageResponse> generateCoverageReport(
-            @AuthenticationPrincipal JwtAuthentication auth,
+            Authentication authentication,
             @PathVariable UUID entityId,
             @RequestBody @Valid Scope3CoverageRequest request) {
+        var auth = (JwtAuthentication) authentication;
         return ResponseEntity.status(201)
             .body(scope3Service.generateCoverageReport(
                 auth.getTenantId(), entityId, request.reportingYear(), request));
@@ -170,10 +180,58 @@ public class GhgController {
     @GetMapping("/entities/{entityId}/scope3/coverage-report")
     @PreAuthorize("hasAnyRole('ESG_MANAGER', 'ESG_VIEWER')")
     public ResponseEntity<Scope3CoverageResponse> getCoverageReport(
-            @AuthenticationPrincipal JwtAuthentication auth,
+            Authentication authentication,
             @PathVariable UUID entityId,
             @Parameter(description = "보고 연도", example = "2025") @RequestParam int reportingYear) {
+        var auth = (JwtAuthentication) authentication;
         return ResponseEntity.ok(
             scope3Service.getCoverageReport(auth.getTenantId(), entityId, reportingYear));
+    }
+
+    // ── 정정 워크플로우 엔드포인트 ─────────────────────────────────────────────
+
+    @Operation(summary = "활동 데이터 정정",
+               description = "원본 데이터를 ARCHIVED 처리하고 정정 데이터를 새로 등록합니다. 배출량 재산출이 자동 트리거됩니다.")
+    @ApiResponse(responseCode = "201", description = "정정 성공")
+    @ApiResponse(responseCode = "400", description = "정정 사유 누락 또는 입력값 오류")
+    @ApiResponse(responseCode = "403", description = "권한 없음")
+    @ApiResponse(responseCode = "404", description = "원본 데이터 없음")
+    @PostMapping("/activity-data/{activityDataId}/correct")
+    @PreAuthorize("hasRole('ESG_MANAGER')")
+    public ResponseEntity<ActivityDataResponse> correctActivityData(
+            Authentication authentication,
+            @PathVariable UUID activityDataId,
+            @RequestBody @Valid CorrectActivityDataRequest request) {
+        var auth = (JwtAuthentication) authentication;
+        var response = ghgService.correctActivityData(
+            auth.getTenantId(), auth.getPrincipal(), activityDataId, request);
+        return ResponseEntity.status(201).body(response);
+    }
+
+    @Operation(summary = "활동 데이터 버전 이력 조회",
+               description = "최초 등록 데이터와 모든 정정 이력을 시간순으로 반환합니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @ApiResponse(responseCode = "404", description = "데이터 없음")
+    @GetMapping("/activity-data/{activityDataId}/versions")
+    @PreAuthorize("hasAnyRole('ESG_MANAGER', 'ESG_VIEWER')")
+    public ResponseEntity<List<ActivityDataVersionResponse>> findVersionHistory(
+            Authentication authentication,
+            @PathVariable UUID activityDataId) {
+        var auth = (JwtAuthentication) authentication;
+        return ResponseEntity.ok(ghgService.findVersionHistory(auth.getTenantId(), activityDataId));
+    }
+
+    @Operation(summary = "정정 전·후 비교",
+               description = "정정 레코드 ID를 기준으로 원본과 정정 후 수치를 비교합니다.")
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @ApiResponse(responseCode = "400", description = "정정 이력이 없는 데이터")
+    @ApiResponse(responseCode = "404", description = "데이터 없음")
+    @GetMapping("/activity-data/{activityDataId}/diff")
+    @PreAuthorize("hasAnyRole('ESG_MANAGER', 'ESG_VIEWER')")
+    public ResponseEntity<ActivityDataDiffResponse> findDiff(
+            Authentication authentication,
+            @PathVariable UUID activityDataId) {
+        var auth = (JwtAuthentication) authentication;
+        return ResponseEntity.ok(ghgService.findDiff(auth.getTenantId(), activityDataId));
     }
 }
