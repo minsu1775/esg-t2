@@ -1,2 +1,2 @@
 package ai.claudecode.esgt2.vw.api;
-// public API for vw (verification workspace) module — populated in Phase 7
+// vw 모듈 공개 API — SnapshotService 참조
