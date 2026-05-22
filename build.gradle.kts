@@ -52,6 +52,9 @@ dependencies {
     // CSV 업로드 파이프라인
     implementation("org.apache.commons:commons-csv:1.12.0")
 
+    // 이메일 발송 (공급업체 초대·리마인더)
+    implementation("org.springframework.boot:spring-boot-starter-mail")
+
     // Lombok
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")

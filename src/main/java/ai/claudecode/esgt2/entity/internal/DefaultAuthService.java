@@ -3,7 +3,9 @@ package ai.claudecode.esgt2.entity.internal;
 import ai.claudecode.esgt2.entity.api.AuthService;
 import ai.claudecode.esgt2.entity.api.LoginRequest;
 import ai.claudecode.esgt2.entity.api.TokenResponse;
+import ai.claudecode.esgt2.entity.infra.UserJpaEntity;
 import ai.claudecode.esgt2.entity.infra.UserRepository;
+import ai.claudecode.esgt2.entity.infra.UserRoleJpaEntity;
 import ai.claudecode.esgt2.entity.infra.UserRoleRepository;
 import ai.claudecode.esgt2.shared.exception.EsgErrorCode;
 import ai.claudecode.esgt2.shared.exception.EsgException;
@@ -41,11 +43,18 @@ class DefaultAuthService implements AuthService {
             throw new EsgException(EsgErrorCode.ACCESS_DENIED, "이메일 또는 비밀번호가 일치하지 않습니다.");
         }
 
-        List<String> roles = userRoleRepository.findByUserId(user.getId()).stream()
-            .map(r -> r.getRole())
-            .toList();
+        List<UserRoleJpaEntity> userRoles = userRoleRepository.findByUserId(user.getId());
+        List<String> roles = userRoles.stream().map(UserRoleJpaEntity::getRole).toList();
 
-        String accessToken = jwtTokenProvider.generateAccessToken(user.getId(), user.getTenantId(), roles);
+        // SUPPLIER 역할이면 entityId를 JWT에 포함 (크로스-엔티티 방어용)
+        UUID entityId = userRoles.stream()
+            .filter(r -> "SUPPLIER".equals(r.getRole()) && r.getEntityId() != null)
+            .map(UserRoleJpaEntity::getEntityId)
+            .findFirst()
+            .orElse(null);
+
+        String accessToken = jwtTokenProvider.generateAccessToken(
+            user.getId(), user.getTenantId(), entityId, roles);
         String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId(), user.getTenantId());
         return new TokenResponse(accessToken, refreshToken);
     }
@@ -61,11 +70,11 @@ class DefaultAuthService implements AuthService {
         UUID userId = UUID.fromString(jwt.getSubject());
         UUID tenantId = UUID.fromString(jwt.getClaimAsString("tenantId"));
 
-        var user = userRepository.findById(userId)
+        userRepository.findById(userId)
             .orElseThrow(() -> new EsgException(EsgErrorCode.ACCESS_DENIED, "사용자를 찾을 수 없습니다."));
 
         List<String> roles = userRoleRepository.findByUserId(userId).stream()
-            .map(r -> r.getRole())
+            .map(UserRoleJpaEntity::getRole)
             .toList();
 
         String newAccessToken = jwtTokenProvider.generateAccessToken(userId, tenantId, roles);
@@ -78,6 +87,31 @@ class DefaultAuthService implements AuthService {
     @Override
     public void logout(String refreshToken) {
         blacklist(refreshToken);
+    }
+
+    @Override
+    @Transactional
+    public UUID createSupplierUser(UUID tenantId, String email, String password, UUID entityId) {
+        // 중복 계정 방지
+        if (userRepository.findActiveByTenantIdAndEmail(tenantId, email).isPresent()) {
+            throw new EsgException(EsgErrorCode.VALIDATION_FAILED,
+                "이미 존재하는 이메일입니다: " + email);
+        }
+        var user = UserJpaEntity.builder()
+            .tenantId(tenantId)
+            .email(email)
+            .passwordHash(passwordEncoder.encode(password))
+            .build();
+        var saved = userRepository.save(user);
+
+        var role = UserRoleJpaEntity.builder()
+            .userId(saved.getId())
+            .role("SUPPLIER")
+            .entityId(entityId)
+            .build();
+        userRoleRepository.save(role);
+
+        return saved.getId();
     }
 
     private boolean isBlacklisted(String token) {

@@ -34,6 +34,15 @@ spring:
       name: admin
       password: admin
 
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: false
+      mail.smtp.starttls.enable: false
+
 management:
   endpoints:
     web:
@@ -55,6 +64,11 @@ jwt:
 intake:
   webhook:
     hmac-secret: ${INTAKE_WEBHOOK_HMAC_SECRET:dev-webhook-secret-must-change-in-prod}
+
+supply:
+  activation-base-url: ${SUPPLY_ACTIVATION_BASE_URL:http://localhost:3000/supply/activate}
+  reminder:
+    reporting-year: ${SUPPLY_REMINDER_YEAR:2025}
 
 logging:
   level:

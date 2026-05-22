@@ -39,8 +39,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             UUID userId = UUID.fromString(jwt.getSubject());
             String tenantIdStr = jwt.getClaimAsString("tenantId");
             UUID tenantId = tenantIdStr != null ? UUID.fromString(tenantIdStr) : null;
+            String entityIdStr = jwt.getClaimAsString("entityId");
+            UUID entityId = entityIdStr != null ? UUID.fromString(entityIdStr) : null;
 
-            var authentication = new JwtAuthentication(userId, tenantId,
+            var authentication = new JwtAuthentication(userId, tenantId, entityId,
                 roles == null ? List.of() : roles);
             SecurityContextHolder.getContext().setAuthentication(authentication);
         } catch (JwtException e) {

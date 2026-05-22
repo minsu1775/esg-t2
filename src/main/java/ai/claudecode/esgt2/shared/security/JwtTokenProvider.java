@@ -26,12 +26,18 @@ public class JwtTokenProvider {
         this.jwtDecoder = NimbusJwtDecoder.withSecretKey(this.secretKey).macAlgorithm(MacAlgorithm.HS256).build();
     }
 
+    /** 기존 호출부 호환성 유지 (entityId 없음). */
     public String generateAccessToken(UUID userId, UUID tenantId, List<String> roles) {
-        return encode(userId, tenantId, roles, jwtProperties.accessTokenExpirySeconds());
+        return generateAccessToken(userId, tenantId, null, roles);
+    }
+
+    /** SUPPLIER 사용자용 — entityId를 JWT 클레임에 포함. */
+    public String generateAccessToken(UUID userId, UUID tenantId, UUID entityId, List<String> roles) {
+        return encode(userId, tenantId, entityId, roles, jwtProperties.accessTokenExpirySeconds());
     }
 
     public String generateRefreshToken(UUID userId, UUID tenantId) {
-        return encode(userId, tenantId, List.of(), jwtProperties.refreshTokenExpirySeconds());
+        return encode(userId, tenantId, null, List.of(), jwtProperties.refreshTokenExpirySeconds());
     }
 
     public Jwt decode(String token) {
@@ -42,15 +48,18 @@ public class JwtTokenProvider {
         return jwtDecoder;
     }
 
-    private String encode(UUID userId, UUID tenantId, List<String> roles, long expirySeconds) {
+    private String encode(UUID userId, UUID tenantId, UUID entityId, List<String> roles, long expirySeconds) {
         var now = Instant.now();
-        var claims = JwtClaimsSet.builder()
+        var builder = JwtClaimsSet.builder()
             .subject(userId.toString())
             .claim("tenantId", tenantId.toString())
             .claim("roles", roles)
             .issuedAt(now)
-            .expiresAt(now.plusSeconds(expirySeconds))
-            .build();
+            .expiresAt(now.plusSeconds(expirySeconds));
+        if (entityId != null) {
+            builder.claim("entityId", entityId.toString());
+        }
+        var claims = builder.build();
 
         var header = JwsHeader.with(MacAlgorithm.HS256).build();
         var encoder = new NimbusJwtEncoder(new ImmutableSecret<>(secretKey));
