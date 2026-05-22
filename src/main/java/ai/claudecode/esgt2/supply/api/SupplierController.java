@@ -9,7 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -31,8 +31,9 @@ public class SupplierController {
     @PostMapping("/suppliers/invite")
     @PreAuthorize("hasRole('TENANT_ADMIN')")
     public ResponseEntity<SupplierInvitationResponse> inviteSupplier(
-            @AuthenticationPrincipal JwtAuthentication auth,
+            Authentication authentication,
             @RequestBody @Valid InviteSupplierRequest request) {
+        var auth = (JwtAuthentication) authentication;
         var response = supplierService.inviteSupplier(
             auth.getTenantId(), auth.getPrincipal(), request);
         return ResponseEntity.status(201).body(response);
@@ -60,9 +61,10 @@ public class SupplierController {
     @PostMapping("/entities/{entityId}/activity-data")
     @PreAuthorize("hasRole('SUPPLIER')")
     public ResponseEntity<ActivityDataResponse> submitData(
-            @AuthenticationPrincipal JwtAuthentication auth,
+            Authentication authentication,
             @PathVariable UUID entityId,
             @RequestBody @Valid SupplierDataRequest request) {
+        var auth = (JwtAuthentication) authentication;
         // T-6-09: 크로스-엔티티 방어 — SUPPLIER는 JWT.entityId와 일치하는 법인만 접근 가능
         if (!entityId.equals(auth.getEntityId())) {
             return ResponseEntity.status(403).build();
@@ -81,8 +83,9 @@ public class SupplierController {
     @PostMapping("/activity-data/{activityDataId}/submit")
     @PreAuthorize("hasRole('SUPPLIER')")
     public ResponseEntity<ActivityDataResponse> submitForReview(
-            @AuthenticationPrincipal JwtAuthentication auth,
+            Authentication authentication,
             @PathVariable UUID activityDataId) {
+        var auth = (JwtAuthentication) authentication;
         return ResponseEntity.ok(supplierService.submitForReview(
             auth.getTenantId(), auth.getPrincipal(), activityDataId));
     }
@@ -94,8 +97,9 @@ public class SupplierController {
     @PostMapping("/activity-data/{activityDataId}/approve")
     @PreAuthorize("hasRole('ESG_MANAGER')")
     public ResponseEntity<ActivityDataResponse> approveData(
-            @AuthenticationPrincipal JwtAuthentication auth,
+            Authentication authentication,
             @PathVariable UUID activityDataId) {
+        var auth = (JwtAuthentication) authentication;
         return ResponseEntity.ok(supplierService.approveData(
             auth.getTenantId(), auth.getPrincipal(), activityDataId));
     }
@@ -106,9 +110,10 @@ public class SupplierController {
     @PostMapping("/activity-data/{activityDataId}/reject")
     @PreAuthorize("hasRole('ESG_MANAGER')")
     public ResponseEntity<ActivityDataResponse> rejectData(
-            @AuthenticationPrincipal JwtAuthentication auth,
+            Authentication authentication,
             @PathVariable UUID activityDataId,
             @RequestParam String reason) {
+        var auth = (JwtAuthentication) authentication;
         return ResponseEntity.ok(supplierService.rejectData(
             auth.getTenantId(), auth.getPrincipal(), activityDataId, reason));
     }

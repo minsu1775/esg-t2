@@ -5,7 +5,7 @@
 > **레퍼런스**: plan.md v1.0  
 > **상태 범례**: `TODO` | `IN_PROGRESS` | `DONE` | `BLOCKED` | `SKIP`
 > 
-> **완료 이력**: Phase 0 (2026-05-19) → Phase 1 (2026-05-19) → Phase 2 (2026-05-19) → Phase 3+3-B (2026-05-20) → Phase 4+재검토 (2026-05-20) → Phase 5+재검토 (2026-05-20) → Phase 6A+재검토 (2026-05-20)
+> **완료 이력**: Phase 0 (2026-05-19) → Phase 1 (2026-05-19) → Phase 2 (2026-05-19) → Phase 3+3-B (2026-05-20) → Phase 4+재검토 (2026-05-20) → Phase 5+재검토 (2026-05-20) → Phase 6A+재검토 (2026-05-20) → Phase 6B-supply (2026-05-22)
 
 ---
 
@@ -265,11 +265,11 @@
 | T-6-04 | `feat:` Webhook 수신 엔드포인트 (POST /api/v1/intake/tenants/{id}/webhook) | DONE | HMAC-SHA256 IntakeController |
 | T-6-05 | `test:` Webhook 시그니처 검증 실패 → 401 | DONE | |
 | T-6-06 | `feat:` 데이터 정규화 파이프라인 (ERP → ActivityData) | DONE | WebhookActivityDataItem → CsvRow → ActivityData |
-| T-6-07 | `feat:` SUPPLIER 계정 초대 + 이메일 발송 | TODO | Phase 6B-supply |
-| T-6-08 | `feat:` POST /api/v1/supplier/activity-data (자사 데이터만) | TODO | Phase 6B-supply |
-| T-6-09 | `test:` 공급업체 → 타사 데이터 접근 시도 → 403 | TODO | Phase 6B-supply |
-| T-6-10 | `feat:` 공급업체 제출 → ESG_MANAGER 승인 워크플로우 | TODO | Phase 6B-supply |
-| T-6-11 | `feat:` 미제출 법인 자동 리마인더 스케줄러 | TODO | Phase 6B-supply |
+| T-6-07 | `feat:` SUPPLIER 계정 초대 + 이메일 발송 | DONE | supply 모듈 — SupplierInvitation + SmtpEmailGateway (2026-05-22) |
+| T-6-08 | `feat:` POST /api/v1/supplier/activity-data (자사 데이터만) | DONE | SupplierController + DefaultSupplierService (2026-05-22) |
+| T-6-09 | `test:` 공급업체 → 타사 데이터 접근 시도 → 403 | DONE | SupplierControllerSecurityTest + JWT entityId 크로스체크 (2026-05-22) |
+| T-6-10 | `feat:` 공급업체 제출 → ESG_MANAGER 승인 워크플로우 | DONE | ActivityDataWorkflowService (ghg.api) + SupplyIntegrationTest (2026-05-22) |
+| T-6-11 | `feat:` 미제출 법인 자동 리마인더 스케줄러 | DONE | SupplierReminderScheduler + ReminderService @ConditionalOnProperty (2026-05-22) |
 | T-6-12 | **[예방]** `test:` CSV 중간 행 오류 시 이전 행 보존 확인 (`REQUIRES_NEW` 트랜잭션) | DONE | |
 | T-6-13 | **[예방]** `test:` 중복 항목 재업로드 → WARN 로그 + 계속 처리 (ERROR 없음) | DONE | |
 | T-6-14 | **[예방]** `feat:` CSV 업로드 행별 독립 `@Transactional(REQUIRES_NEW)` 적용 | DONE | ActivityDataRowImporter |

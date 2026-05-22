@@ -130,6 +130,56 @@ _버그 발생 시 추가 예정_
 
 ---
 
+## Phase 6B: 공급업체 포털 (supply 모듈)
+
+### BUG-P6B-01 [P1 · FIXED] `@AuthenticationPrincipal JwtAuthentication` null 주입
+
+- **발견 Phase**: Phase 6B (2026-05-22)
+- **심각도**: HIGH
+- **증상**: `@AuthenticationPrincipal JwtAuthentication auth`로 파라미터 선언 시 `auth`가 항상 `null`. 컨트롤러에서 `auth.getTenantId()` 호출 시 NullPointerException.
+- **원인**: `JwtAuthentication.getPrincipal()`이 `UUID userId`를 반환하도록 구현됨. Spring의 `@AuthenticationPrincipal`은 `Authentication.getPrincipal()` 반환값을 파라미터 타입으로 주입 시도 → 반환값이 `UUID`인데 파라미터 타입이 `JwtAuthentication`이므로 캐스트 불가 → null 대입.
+- **영향**: `SupplierController`의 `submitData()` — entityId 크로스체크 로직이 실행되지 않아 T-6-09 403 가드가 무력화됨. 잠재적으로 다른 컨트롤러(GhgController, EntityController 등)에도 동일 패턴 존재.
+- **해결**: `Authentication authentication` 파라미터로 변경 후 명시적 캐스트 사용:
+  ```java
+  // 수정 전 (버그)
+  public ResponseEntity<?> method(@AuthenticationPrincipal JwtAuthentication auth) { ... }
+  // 수정 후 (정상)
+  public ResponseEntity<?> method(Authentication authentication) {
+      var auth = (JwtAuthentication) authentication;
+      ...
+  }
+  ```
+- **재발 방지**: `JwtAuthentication.getPrincipal()`의 반환 타입이 `UUID`인 한, `@AuthenticationPrincipal JwtAuthentication` 패턴은 절대 사용 금지. 코드 리뷰에서 해당 패턴 발견 시 차단.
+- **잠재적 영향 범위**: `GhgController`, `EntityController`, `VwController`, `RptController` — 현재는 컨트롤러 레벨 HTTP 통합 테스트가 없어 미발견 상태. 향후 HTTP 레벨 통합 테스트 추가 시 동일 패턴 일괄 수정 필요.
+
+### BUG-P6B-02 [P1 · FIXED] Spring Modulith 서브패키지 자동 노출 오인
+
+- **발견 Phase**: Phase 6B (2026-05-22)
+- **심각도**: MEDIUM
+- **증상**: `ModularityTest` 실패 — `supply` 모듈이 `ghg.api.ActivityDataResponse`를 참조하는데 "not exposed" 오류 발생.
+- **원인**: Spring Modulith 2.x에서 모듈 내 서브패키지(`ghg/api/`, `ghg/domain/`)는 자동으로 외부 모듈에 노출되지 않음. 모듈 루트 패키지(`ghg/`)만 기본 공개. `@NamedInterface` 없이 `ghg.api` 타입을 다른 모듈에서 사용하면 위반.
+- **해결**: `src/main/java/ai/claudecode/esgt2/ghg/api/package-info.java` 생성:
+  ```java
+  @org.springframework.modulith.NamedInterface("api")
+  package ai.claudecode.esgt2.ghg.api;
+  ```
+- **재발 방지**: 새 모듈 서브패키지를 다른 모듈에 공개할 때 반드시 `package-info.java`에 `@NamedInterface` 선언. `ModularityTest`를 Phase 0부터 CI에서 상시 실행해 위반을 즉시 감지.
+
+### BUG-P6B-03 [P2 · FIXED] `NoUniqueBeanDefinitionException` — EmailGateway 이중 등록
+
+- **발견 Phase**: Phase 6B (2026-05-22)
+- **심각도**: MEDIUM
+- **증상**: `SupplyIntegrationTest` 실행 시 `NoUniqueBeanDefinitionException: No qualifying bean of type EmailGateway — expected single matching bean but found 2`.
+- **원인**: `SupplyTestConfig`에 `StubEmailGateway stubEmailGateway()` + `EmailGateway emailGateway(StubEmailGateway)` 두 개의 빈을 모두 `@Primary`로 등록. Spring이 `EmailGateway` 타입으로 주입할 때 두 빈 모두 후보가 됨.
+- **해결**: `SupplyTestConfig` 단순화 — `StubEmailGateway`가 `EmailGateway`를 구현하므로 단일 빈으로 충분:
+  ```java
+  @Bean @Primary
+  public StubEmailGateway emailGateway() { return new StubEmailGateway(); }
+  ```
+- **재발 방지**: `@TestConfiguration`에서 빈 등록 시 같은 인터페이스를 구현하는 빈을 두 개 이상 `@Primary`로 등록하지 않는다.
+
+---
+
 ## Phase 7: 공시 보고서 생성
 
 _버그 발생 시 추가 예정_
