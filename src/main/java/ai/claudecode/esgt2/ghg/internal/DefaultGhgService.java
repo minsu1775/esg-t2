@@ -96,6 +96,13 @@ class DefaultGhgService implements GhgService {
             .stream().map(this::toEmissionRecordResponse).toList();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public boolean hasActivityData(UUID tenantId, UUID entityId, int reportingYear) {
+        return activityDataRepository.existsByTenantIdAndEntityIdAndReportingYear(
+            tenantId, entityId, reportingYear);
+    }
+
     private String deriveScopeFromCategory(String category) {
         if (category == null) return "SCOPE1";
         // SCOPE2_ELECTRICITY_MB → market-based; SCOPE2_* → location-based

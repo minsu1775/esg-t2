@@ -32,6 +32,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/auth/**").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
                 .requestMatchers("/api/v1/intake/tenants/*/webhook").permitAll()
+                .requestMatchers("/api/v1/supply/suppliers/activate").permitAll()
                 .anyRequest().authenticated()
             )
             .exceptionHandling(ex -> ex
