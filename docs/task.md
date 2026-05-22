@@ -309,19 +309,19 @@
 
 | ID | 태스크 | 상태 | 비고 |
 |---|---|---|---|
-| T-7-01 | V12__report_tables.sql | TODO | disclosure_reports |
-| T-7-02 | `test:` Scope 1·2·3 합산 수치 정확도 | TODO | |
-| T-7-03 | `test:` YoY 비교 (전년 데이터 없을 경우 N/A) | TODO | |
-| T-7-04 | `test:` DRAFT 보고서 → 스냅샷 생성 불가 | TODO | |
-| T-7-05 | `feat:` ReportBuilder 도메인 서비스 | TODO | |
-| T-7-06 | `feat:` KSSB 2 지표·목표 섹션 자동 생성 | TODO | |
-| T-7-07 | `feat:` YoY 비교 자동 계산 | TODO | |
-| T-7-08 | `feat:` 보고서 승인 워크플로우 (DRAFT → SUBMITTED → APPROVED) | TODO | @Auditable |
-| T-7-09 | `feat:` PDF 렌더링 (POST /api/v1/reports/{id}/pdf) | TODO | Apache PDFBox |
-| T-7-10 | `feat:` iXBRL XBRL taxonomy 매핑 데이터 모델 설계 | TODO | 렌더링은 M+1 |
-| T-7-11 | **[예방]** `feat:` ApprovalEntity — `approve()`, `reject(reason)`, `escalate()` 메서드만 노출 | TODO | esg-t1 교훈: setStatus() 직접 호출 금지 |
-| T-7-12 | **[예방]** `test:` `reject(reason)` — reason 공백 → `EsgException(REJECTION_REASON_REQUIRED)` | TODO | |
-| T-7-13 | **[예방]** `test:` `AuditLogRepository`에서 `delete` 메서드 호출 컴파일 오류 확인 (`Repository<T,ID>` 마커) | TODO | esg-t1 BUG-P3-07 교훈 |
+| T-7-01 | V22__report_tables.sql | DONE | disclosure_reports (V22로 생성됨) |
+| T-7-02 | `test:` Scope 1·2·3 합산 수치 정확도 | DONE | DisclosureReportDomainTest + ReportBuilderTest |
+| T-7-03 | `test:` YoY 비교 (전년 데이터 없을 경우 N/A) | DONE | YoyCalculatorTest |
+| T-7-04 | `test:` DRAFT 보고서 → 스냅샷 생성 불가 | DONE | isApproved() gate — ReportIntegrationTest |
+| T-7-05 | `feat:` ReportBuilder 도메인 서비스 | DONE | ReportBuilder.buildKssb2Sections() |
+| T-7-06 | `feat:` KSSB 2 지표·목표 섹션 자동 생성 | DONE | KSSB2.S1/S2-LB/S2-MB/S3 섹션 |
+| T-7-07 | `feat:` YoY 비교 자동 계산 | DONE | YoyCalculator.delta() — 전년 없으면 null |
+| T-7-08 | `feat:` 보고서 승인 워크플로우 (DRAFT → SUBMITTED → APPROVED) | DONE | submit/approve/reject @Auditable |
+| T-7-09 | `feat:` PDF 렌더링 (GET /api/v1/reports/{id}/pdf) | DONE | Apache PDFBox 3.0.3 |
+| T-7-10 | `feat:` iXBRL XBRL taxonomy 매핑 데이터 모델 설계 | DONE | 렌더링은 M+1 스텁 |
+| T-7-11 | **[예방]** `feat:` ApprovalEntity — `submit()`, `approve()`, `reject(reason)` 메서드만 노출 | DONE | setStatus() 직접 호출 없음 (DisclosureReport) |
+| T-7-12 | **[예방]** `test:` `reject(reason)` — reason 공백 → `EsgException(REJECTION_REASON_REQUIRED)` | DONE | DisclosureReportDomainTest + ReportIntegrationTest |
+| T-7-13 | **[예방]** `test:` `AuditLogRepository`에서 `delete` 메서드 호출 컴파일 오류 확인 (`Repository<T,ID>` 마커) | DONE | AuditLogRepositoryAppendOnlyTest |
 
 ---
 

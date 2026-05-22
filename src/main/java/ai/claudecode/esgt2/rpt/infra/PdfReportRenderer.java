@@ -68,7 +68,7 @@ public class PdfReportRenderer {
                 cs.endText();
                 y -= 20;
 
-                // 섹션 데이터
+                // 섹션 데이터 — itemCode만 표시 (Helvetica는 한국어 비지원, MVP)
                 for (ReportSection section : sections) {
                     if (y < 100) break; // 페이지 넘침 방지 (MVP)
                     cs.beginText();
@@ -77,8 +77,7 @@ public class PdfReportRenderer {
                     String yoy = section.yoyDelta() != null
                         ? " (YoY: " + section.yoyDelta() + "%)"
                         : " (YoY: N/A)";
-                    cs.showText(section.itemCode() + " - " + section.title() + ": "
-                        + section.value() + yoy);
+                    cs.showText(section.itemCode() + ": " + section.value() + " tCO2e" + yoy);
                     cs.endText();
                     y -= 16;
                 }
