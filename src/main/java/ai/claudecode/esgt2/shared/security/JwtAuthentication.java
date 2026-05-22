@@ -10,17 +10,25 @@ public class JwtAuthentication extends AbstractAuthenticationToken {
 
     private final UUID userId;
     private final UUID tenantId;
-    private final UUID entityId;   // SUPPLIER만 설정; 다른 역할은 null
+    private final UUID entityId;    // SUPPLIER만 설정; 다른 역할은 null
+    private final UUID snapshotId;  // VERIFIER만 설정; 다른 역할은 null
 
     public JwtAuthentication(UUID userId, UUID tenantId, List<String> roles) {
-        this(userId, tenantId, null, roles);
+        this(userId, tenantId, null, null, roles);
     }
 
     public JwtAuthentication(UUID userId, UUID tenantId, UUID entityId, List<String> roles) {
+        this(userId, tenantId, entityId, null, roles);
+    }
+
+    /** VERIFIER 역할 생성자 — snapshotId 포함 */
+    public JwtAuthentication(UUID userId, UUID tenantId, UUID entityId,
+                              UUID snapshotId, List<String> roles) {
         super(roles.stream().map(r -> new SimpleGrantedAuthority("ROLE_" + r)).toList());
         this.userId = userId;
         this.tenantId = tenantId;
         this.entityId = entityId;
+        this.snapshotId = snapshotId;
         setAuthenticated(true);
     }
 
@@ -41,5 +49,10 @@ public class JwtAuthentication extends AbstractAuthenticationToken {
     /** SUPPLIER 역할 사용자의 스코프 법인 ID. 다른 역할은 null. */
     public UUID getEntityId() {
         return entityId;
+    }
+
+    /** VERIFIER 역할 사용자의 지정 스냅샷 ID. 다른 역할은 null. */
+    public UUID getSnapshotId() {
+        return snapshotId;
     }
 }

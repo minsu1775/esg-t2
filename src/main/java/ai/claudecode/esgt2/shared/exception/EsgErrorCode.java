@@ -15,5 +15,7 @@ public enum EsgErrorCode {
     CSV_PARSE_FAILED,
     INVITATION_NOT_FOUND,
     INVITATION_EXPIRED,
-    INTERNAL_ERROR
+    INTERNAL_ERROR,
+    REPORT_NOT_APPROVED,    // 미승인 보고서에 스냅샷 생성 시도
+    SNAPSHOT_NOT_FOUND      // 스냅샷 미존재
 }

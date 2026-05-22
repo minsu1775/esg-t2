@@ -13,8 +13,14 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import java.util.regex.Pattern;
 
 /**
- * 요청마다 PostgreSQL 세션 변수를 설정해 RLS(Row-Level Security)가 올바른 테넌트 데이터만 반환하도록 한다.
+ * 요청마다 PostgreSQL 세션 변수를 설정해 RLS(Row-Level Security)가 올바른 데이터만 반환하도록 한다.
  * SecurityFilter 이후, API 핸들러 이전에 실행된다.
+ *
+ * <p>설정되는 세션 변수:
+ * <ul>
+ *   <li>{@code app.current_tenant_id}: 모든 인증 요청에서 테넌트 격리 적용</li>
+ *   <li>{@code app.verifier_snapshot_id}: VERIFIER 역할 요청에서 스냅샷 격리 적용</li>
+ * </ul>
  */
 @Component
 @RequiredArgsConstructor
@@ -31,10 +37,15 @@ public class TenantContextInterceptor implements HandlerInterceptor {
                               HttpServletResponse response,
                               Object handler) {
         String tenantId = null;
+        String snapshotId = null;
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth instanceof JwtAuthentication jwtAuth && jwtAuth.getTenantId() != null) {
             tenantId = jwtAuth.getTenantId().toString();
+            // VERIFIER: 지정 스냅샷 ID도 세션에 설정
+            if (jwtAuth.getSnapshotId() != null) {
+                snapshotId = jwtAuth.getSnapshotId().toString();
+            }
         } else {
             // JWT 없는 경로(Webhook)에서도 RLS가 올바르게 동작하도록 URL에서 tenantId 추출
             tenantId = extractWebhookTenantId(request.getRequestURI());
@@ -46,6 +57,13 @@ public class TenantContextInterceptor implements HandlerInterceptor {
                 "SELECT set_config('app.current_tenant_id', ?, true)",
                 String.class, tenantId);
         }
+
+        if (snapshotId != null) {
+            jdbcTemplate.queryForObject(
+                "SELECT set_config('app.verifier_snapshot_id', ?, true)",
+                String.class, snapshotId);
+        }
+
         return true;
     }
 

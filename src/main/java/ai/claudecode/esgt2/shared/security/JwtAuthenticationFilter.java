@@ -41,8 +41,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             UUID tenantId = tenantIdStr != null ? UUID.fromString(tenantIdStr) : null;
             String entityIdStr = jwt.getClaimAsString("entityId");
             UUID entityId = entityIdStr != null ? UUID.fromString(entityIdStr) : null;
+            // VERIFIER 전용: 지정 스냅샷 ID
+            String snapshotIdStr = jwt.getClaimAsString("verifier_snapshot_id");
+            UUID snapshotId = snapshotIdStr != null ? UUID.fromString(snapshotIdStr) : null;
 
-            var authentication = new JwtAuthentication(userId, tenantId, entityId,
+            var authentication = new JwtAuthentication(userId, tenantId, entityId, snapshotId,
                 roles == null ? List.of() : roles);
             SecurityContextHolder.getContext().setAuthentication(authentication);
         } catch (JwtException e) {
