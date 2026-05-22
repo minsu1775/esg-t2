@@ -8,7 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -32,8 +32,9 @@ public class EntityController {
     @PostMapping
     @PreAuthorize("hasRole('TENANT_ADMIN')")
     public ResponseEntity<EntityResponse> create(
-            @AuthenticationPrincipal JwtAuthentication auth,
+            Authentication authentication,
             @RequestBody @Valid CreateEntityRequest request) {
+        var auth = (JwtAuthentication) authentication;
         UUID tenantId = auth.getTenantId();
         EntityResponse response = entityManagementService.create(tenantId, request);
         return ResponseEntity.created(URI.create("/api/v1/entities/" + response.id()))
@@ -45,7 +46,8 @@ public class EntityController {
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<EntityResponse>> findAll(
-            @AuthenticationPrincipal JwtAuthentication auth) {
+            Authentication authentication) {
+        var auth = (JwtAuthentication) authentication;
         return ResponseEntity.ok(entityManagementService.findAll(auth.getTenantId()));
     }
 
@@ -56,9 +58,10 @@ public class EntityController {
     @PutMapping("/{parentId}/relationships")
     @PreAuthorize("hasRole('TENANT_ADMIN')")
     public ResponseEntity<RelationshipResponse> setRelationship(
-            @AuthenticationPrincipal JwtAuthentication auth,
+            Authentication authentication,
             @PathVariable UUID parentId,
             @RequestBody @Valid SetRelationshipRequest request) {
+        var auth = (JwtAuthentication) authentication;
         RelationshipResponse response = entityManagementService.setRelationship(
             auth.getTenantId(), parentId, request);
         return ResponseEntity.status(201).body(response);

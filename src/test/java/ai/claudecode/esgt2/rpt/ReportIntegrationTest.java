@@ -1,5 +1,7 @@
 package ai.claudecode.esgt2.rpt;
 
+import ai.claudecode.esgt2.audit.infra.OutboxEventRepository;
+import ai.claudecode.esgt2.audit.internal.OutboxProcessingService;
 import ai.claudecode.esgt2.rpt.api.CreateReportRequest;
 import ai.claudecode.esgt2.rpt.api.ReportService;
 import ai.claudecode.esgt2.shared.exception.EsgException;
@@ -23,6 +25,8 @@ class ReportIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired ReportService reportService;
     @Autowired JdbcTemplate jdbcTemplate;
+    @Autowired OutboxEventRepository outboxEventRepository;
+    @Autowired OutboxProcessingService outboxProcessingService;
 
     private static final UUID TENANT_ID = UUID.fromString("00000000-0000-0000-0000-000000000095");
     private static final UUID ENTITY_ID = UUID.fromString("00000000-0000-0000-0000-000000000096");
@@ -30,6 +34,10 @@ class ReportIntegrationTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        // 감사·아웃박스 초기화
+        jdbcTemplate.execute("DELETE FROM audit_logs WHERE tenant_id = '00000000-0000-0000-0000-000000000095'");
+        outboxEventRepository.deleteAll();
+
         // FK 역순으로 정리
         jdbcTemplate.execute(
             "DELETE FROM disclosure_reports WHERE tenant_id = '00000000-0000-0000-0000-000000000095'");
@@ -107,6 +115,25 @@ class ReportIntegrationTest extends AbstractIntegrationTest {
         assertThatThrownBy(() ->
             reportService.rejectReport(TENANT_ID, ACTOR_ID, report.id(), ""))
             .isInstanceOf(EsgException.class);
+    }
+
+    // @Auditable 검증: 보고서 생성 시 outbox 이벤트 및 AuditLog 기록 확인
+    @Test
+    void 보고서_생성_시_감사로그가_기록된다() {
+        reportService.createReport(TENANT_ID, ACTOR_ID,
+            new CreateReportRequest(ENTITY_ID, 2025, "KSSB2"));
+
+        // outbox 이벤트 1건 이상 생성됨 확인
+        var pending = outboxEventRepository.findByStatusOrderByCreatedAtAsc("PENDING");
+        assertThat(pending).isNotEmpty();
+        assertThat(pending.get(0).getEventType()).isEqualTo("REPORT_CREATED");
+
+        // outbox 처리 후 AuditLog 생성 확인
+        outboxProcessingService.processNow();
+        int auditCount = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM audit_logs WHERE tenant_id = '00000000-0000-0000-0000-000000000095'",
+            Integer.class);
+        assertThat(auditCount).isGreaterThanOrEqualTo(1);
     }
 
     // T-7-09: PDF 생성 확인

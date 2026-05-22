@@ -519,6 +519,76 @@
 
 ---
 
+### Phase 6B: 공급업체 포털 리뷰 (2026-05-22)
+
+> 구현 범위: T-6-07~15 / supply 모듈 (SupplierController, SupplierService, DefaultSupplierService)
+
+| 심각도 | 항목 | 수정 내용 |
+|---|---|---|
+| **P1** | `@AuthenticationPrincipal JwtAuthentication auth` — `getPrincipal()`이 UUID를 반환하므로 캐스트 불가 → auth가 null | `Authentication authentication` 파라미터 + `(JwtAuthentication) authentication` 명시적 캐스트로 전면 교체 (BUG-P6B-01) |
+| P2 | Spring Modulith `ghg.api` `@NamedInterface` 누락 → ModularityTest 실패 | `ghg/api/package-info.java` 생성: `@NamedInterface("api")` (BUG-P6B-02) |
+| P2 | `SupplyTestConfig` — `StubEmailGateway` + `EmailGateway` 중복 `@Primary` 등록 | 단일 빈으로 통합 (BUG-P6B-03) |
+
+**테스트 결과**: ✅ **BUILD SUCCESSFUL** (155 tests, 0 failures)
+
+---
+
+### Phase 6-B: 정정·재공시 워크플로우 & Formula DSL 배포 리뷰 (2026-05-22)
+
+> 구현 범위: T-6B-01~09 / 정정 워크플로우, ActivityDataCorrectedEvent, Formula 버전 관리
+
+| 심각도 | 항목 | 수정 내용 |
+|---|---|---|
+| **P1** | `@EventListener` + `@Transactional(REQUIRED)` → 배출계수 미존재 시 정정 트랜잭션 rollback-only 마킹 | `@TransactionalEventListener(AFTER_COMMIT)` + `REQUIRES_NEW` 독립 트랜잭션으로 변경 (BUG-P6B-04) |
+| P2 | `shared.event` 패키지 `@NamedInterface` 누락 → ModularityTest 위반 | `shared/event/package-info.java` 생성: `@NamedInterface("events")` (BUG-P6B-05) |
+
+**테스트 결과**: ✅ **BUILD SUCCESSFUL** (197 tests, 0 failures)
+
+---
+
+### Phase 7: 공시 보고서 생성 리뷰 (2026-05-22)
+
+> 구현 범위: T-7-01~09 / rpt 모듈 (ReportController, DefaultReportService, PDF 생성)
+
+| 항목 | 결과 | 비고 |
+|---|---|---|
+| 보고서 상태 기계 (DRAFT→SUBMITTED→APPROVED/REJECTED) | ✅ | 명시적 전이 메서드만 노출, `setStatus()` 없음 |
+| `isApproved()` — vw 모듈 게이트 | ✅ | `DefaultSnapshotService.createSnapshot()`에서 호출 |
+| `rpt.api @NamedInterface` | ⚠️ 누락 → 즉시 수정 | Phase 8에서 vw→rpt 참조 시 ModularityTest 실패로 발견. `rpt/api/package-info.java` 생성 (BUG-P8-02) |
+| `@Auditable` — REPORT_CREATED, SUBMITTED, APPROVED, REJECTED | ✅ | 4개 변경 메서드 모두 부착 |
+| PDF 매직 바이트 검증 (`%PDF`) | ✅ | `ReportIntegrationTest.PDF_생성_바이트_배열_반환()` |
+| `@Auditable` 통합 테스트 검증 | ⚠️ 누락 → 후속 리뷰에서 추가 | `보고서_생성_시_감사로그가_기록된다()` 추가 완료 |
+
+**테스트 결과**: ✅ **BUILD SUCCESSFUL** (197 tests, 0 failures)
+
+---
+
+### Phase 8: 외부 검증 워크스페이스 리뷰 (2026-05-22)
+
+> 구현 범위: T-8-01~10 / vw 모듈 (SnapshotService, VwController, VERIFIER 격리)
+
+| 항목 | 결과 | 비고 |
+|---|---|---|
+| 스냅샷 불변성 — REVOKE UPDATE/DELETE + BEFORE 트리거 | ✅ | `vw_pg_rls.sql`: DB 레벨 이중 방어 |
+| VERIFIER RLS 격리 — `app.verifier_snapshot_id` SET LOCAL | ✅ | `JwtAuthentication.getSnapshotId()` → `TenantContextInterceptor` |
+| SHA-256 해시 64자 hex (재현성) | ✅ | `LinkedHashMap` 필드 순서 고정 → 동일 JSON → 동일 해시 |
+| 서명 분리 테이블 `verification_signatures` | ✅ | 스냅샷 본체 완전 불변 유지, UNIQUE(snapshot_id) 제약 |
+| `@Auditable` — SNAPSHOT_CREATED, COMMENT_ADDED, SIGNED | ✅ | 3개 변경 메서드 모두 부착 |
+| `ObjectMapper` 빈 미등록 | ⚠️ 발견 → 즉시 수정 | static `SNAPSHOT_MAPPER` 상수로 교체 (BUG-P8-01) |
+| `@Auditable` 통합 테스트 검증 | ⚠️ 누락 → 후속 리뷰에서 추가 | `스냅샷_생성_시_감사로그가_기록된다()` 추가 완료 |
+
+**Phase 0~8 전체 리뷰 추가 개선 (2026-05-22)**:
+
+| 심각도 | 항목 | 수정 내용 |
+|---|---|---|
+| **P1** | `EntityController`, `IntakeController` — `@AuthenticationPrincipal JwtAuthentication` 패턴 잔존 (BUG-P6B-01 미수정) | `Authentication authentication` + `(JwtAuthentication)` 캐스팅으로 전면 교체 |
+| P2 | `ActuatorEndpointTest` — TestContainers 미사용 + MailHealthIndicator 503 | `AbstractIntegrationTest` 확장 + `management.health.mail.enabled=false` 추가 (BUG-P8-03) |
+| P2 | `ReportIntegrationTest`, `SnapshotIntegrationTest` — `@Auditable` 검증 누락 | `보고서_생성_시_감사로그가_기록된다()`, `스냅샷_생성_시_감사로그가_기록된다()` 추가 |
+
+**테스트 결과**: ✅ **BUILD SUCCESSFUL** (205 tests, 0 failures)
+
+---
+
 ## 3. 공통 이슈 트래킹
 
 > 같은 이슈가 3회 이상 반복되면 체크리스트에 항목 추가

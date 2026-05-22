@@ -204,13 +204,42 @@ _버그 발생 시 추가 예정_
 
 ## Phase 7: 공시 보고서 생성
 
-_버그 발생 시 추가 예정_
+_버그 없음 (Phase 7에서 발견된 이슈 없음)_
 
 ---
 
 ## Phase 8: 외부 검증 워크스페이스
 
-_버그 발생 시 추가 예정_
+### BUG-P8-01 [P2 · FIXED] `ObjectMapper` 빈 미등록 — `DefaultSnapshotService` 직렬화 실패
+
+- **발견 Phase**: Phase 8 (2026-05-22)
+- **심각도**: MEDIUM
+- **증상**: `DefaultSnapshotService`에서 `@Autowired ObjectMapper objectMapper` 선언 시 `NoSuchBeanDefinitionException: No qualifying bean of type 'com.fasterxml.jackson.databind.ObjectMapper' available`.
+- **원인**: Spring Boot 4의 테스트 컨텍스트에서 `ObjectMapper` 빈이 자동 등록되지 않음. JPA 슬라이스 테스트나 특정 컨텍스트 설정에서는 Web MVC AutoConfigure가 적용되지 않아 `ObjectMapper` 빈이 생성되지 않을 수 있음.
+- **영향**: `SnapshotIntegrationTest` 컨텍스트 로드 실패 → 스냅샷 생성 관련 전체 테스트 불가.
+- **해결**: `private final ObjectMapper objectMapper` 빈 의존성 제거 → `private static final ObjectMapper SNAPSHOT_MAPPER = new ObjectMapper().disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)` 정적 상수로 교체. 스냅샷 서비스에서 ObjectMapper는 JSON 직렬화 전용으로만 쓰이므로 빈 주입 불필요.
+- **재발 방지**: 스냅샷·감사 목적의 직렬화 전용 ObjectMapper는 정적 상수로 선언. 서비스 비즈니스 로직에서 Jackson 바인딩이 필요한 경우에만 빈 주입 사용.
+
+### BUG-P8-02 [P2 · FIXED] `rpt/api` 패키지 `@NamedInterface` 누락 — ModularityTest 위반
+
+- **발견 Phase**: Phase 8 (2026-05-22)
+- **심각도**: MEDIUM
+- **증상**: `ModularityTest` 실패 — "Module 'vw' depends on non-exposed type `ai.claudecode.esgt2.rpt.api.ReportService` within module 'rpt'".
+- **원인**: Phase 7에서 `rpt` 모듈 생성 시 `rpt/api/package-info.java`에 `@NamedInterface("api")` 선언 누락. `ghg/api`, `entity/api`에는 있었으나 `rpt/api`에는 적용하지 않음.
+- **영향**: `vw` 모듈이 `rpt.api.ReportService`를 참조하는데 Spring Modulith가 해당 패키지를 비공개 타입으로 취급 → ModularityTest 위반.
+- **해결**: `src/main/java/ai/claudecode/esgt2/rpt/api/package-info.java` 생성: `@org.springframework.modulith.NamedInterface("api")`.
+- **재발 방지**: 새 모듈의 `api/` 서브패키지 생성 시 즉시 `package-info.java`에 `@NamedInterface("api")` 선언. 다른 모듈에서 참조되기 전에 ModularityTest 실행으로 확인.
+
+### BUG-P8-03 [P2 · FIXED] `ActuatorEndpointTest` — `MailHealthIndicator` 503 반환
+
+- **발견 Phase**: Phase 8 리뷰 (2026-05-22)
+- **심각도**: MEDIUM
+- **증상**: `ActuatorEndpointTest.health_엔드포인트가_200을_반환한다()` 실패 — `/actuator/health` 응답이 500 대신 503 반환.
+- **원인**: Spring Boot Actuator는 `MailHealthIndicator`를 자동 등록하며, 이는 `application.yml`에 설정된 `spring.mail.host=localhost:1025` (Mailhog 포트)에 SMTP 연결을 시도. 테스트 환경에서는 메일 서버가 실행되지 않으므로 `Connection refused` → 헬스 컴포넌트 DOWN → 전체 응답 503.
+- **추가 원인**: `ActuatorEndpointTest`가 `AbstractIntegrationTest`를 상속하지 않아 TestContainers 없이 H2 DB로 실행됨 → DB 헬스도 불안정.
+- **해결 1**: `ActuatorEndpointTest extends AbstractIntegrationTest` 추가 → TestContainers PostgreSQL 사용.
+- **해결 2**: `management.health.mail.enabled=false` 속성 추가 → 메일 서버 헬스 비활성화.
+- **재발 방지**: Actuator 테스트에서 외부 서비스(Redis, Mail, 기타) 헬스 지표는 명시적으로 비활성화. `management.health.<component>.enabled=false` 패턴 사용.
 
 ---
 

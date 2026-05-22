@@ -1,5 +1,7 @@
 package ai.claudecode.esgt2.vw;
 
+import ai.claudecode.esgt2.audit.infra.OutboxEventRepository;
+import ai.claudecode.esgt2.audit.internal.OutboxProcessingService;
 import ai.claudecode.esgt2.rpt.api.CreateReportRequest;
 import ai.claudecode.esgt2.rpt.api.ReportService;
 import ai.claudecode.esgt2.shared.exception.EsgException;
@@ -28,6 +30,8 @@ class SnapshotIntegrationTest extends AbstractIntegrationTest {
     @Autowired SnapshotService snapshotService;
     @Autowired ReportService reportService;
     @Autowired JdbcTemplate jdbcTemplate;
+    @Autowired OutboxEventRepository outboxEventRepository;
+    @Autowired OutboxProcessingService outboxProcessingService;
 
     private static final UUID TENANT_ID = UUID.fromString("00000000-0000-0000-0000-000000000097");
     private static final UUID ENTITY_ID = UUID.fromString("00000000-0000-0000-0000-000000000098");
@@ -35,6 +39,10 @@ class SnapshotIntegrationTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        // 감사·아웃박스 초기화
+        jdbcTemplate.execute("DELETE FROM audit_logs WHERE tenant_id = '00000000-0000-0000-0000-000000000097'");
+        outboxEventRepository.deleteAll();
+
         jdbcTemplate.execute(
             "DELETE FROM verification_signatures WHERE tenant_id = '00000000-0000-0000-0000-000000000097'");
         jdbcTemplate.execute(
@@ -159,6 +167,28 @@ class SnapshotIntegrationTest extends AbstractIntegrationTest {
         var comments = snapshotService.listComments(TENANT_ID, snapshot.id());
         assertThat(comments).hasSize(1);
         assertThat(comments.get(0).body()).isEqualTo("Scope 1 데이터 확인 요청");
+    }
+
+    // @Auditable 검증: 스냅샷 생성 시 outbox 이벤트 및 AuditLog 기록 확인
+    @Test
+    void 스냅샷_생성_시_감사로그가_기록된다() {
+        var report = reportService.createReport(TENANT_ID, ACTOR_ID,
+            new CreateReportRequest(ENTITY_ID, 2025, "KSSB2"));
+        reportService.submitReport(TENANT_ID, ACTOR_ID, report.id());
+        reportService.approveReport(TENANT_ID, ACTOR_ID, report.id());
+        outboxEventRepository.deleteAll();  // 보고서 관련 이벤트는 제거하고 스냅샷만 확인
+
+        snapshotService.createSnapshot(TENANT_ID, ACTOR_ID, report.id());
+
+        var pending = outboxEventRepository.findByStatusOrderByCreatedAtAsc("PENDING");
+        assertThat(pending).isNotEmpty();
+        assertThat(pending.get(0).getEventType()).isEqualTo("SNAPSHOT_CREATED");
+
+        outboxProcessingService.processNow();
+        int auditCount = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM audit_logs WHERE tenant_id = '00000000-0000-0000-0000-000000000097'",
+            Integer.class);
+        assertThat(auditCount).isGreaterThanOrEqualTo(1);
     }
 
     // T-8-10: 서명 완료

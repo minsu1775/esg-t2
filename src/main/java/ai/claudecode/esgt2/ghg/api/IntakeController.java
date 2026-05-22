@@ -15,7 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -50,9 +50,10 @@ public class IntakeController {
     @PostMapping(value = "/entities/{entityId}/csv", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ESG_MANAGER')")
     public ResponseEntity<CsvUploadResponse> uploadCsv(
-            @AuthenticationPrincipal JwtAuthentication auth,
+            Authentication authentication,
             @Parameter(description = "법인 ID") @PathVariable UUID entityId,
             @RequestParam("file") MultipartFile file) {
+        var auth = (JwtAuthentication) authentication;
         var result = intakeService.uploadCsv(auth.getTenantId(), entityId, file.getResource());
         return ResponseEntity.ok(result);
     }
