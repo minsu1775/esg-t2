@@ -20,4 +20,10 @@ public interface ActivityDataRepository extends JpaRepository<ActivityDataJpaEnt
     boolean existsByTenantIdAndEntityIdAndReportingYear(UUID tenantId, UUID entityId, int reportingYear);
 
     java.util.Optional<ActivityDataJpaEntity> findByIdAndTenantId(UUID id, UUID tenantId);
+
+    // 버전 이력 조회용 — 특정 원본의 직접 정정 목록
+    List<ActivityDataJpaEntity> findByCorrectionOfAndTenantId(UUID correctionOf, UUID tenantId);
+
+    // Formula 영향 조회용 — 특정 카테고리의 활동 데이터 전체 (ARCHIVED 포함)
+    List<ActivityDataJpaEntity> findByTenantIdAndCategory(UUID tenantId, String category);
 }

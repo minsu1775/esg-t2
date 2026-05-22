@@ -54,6 +54,9 @@ public class ActivityDataJpaEntity {
 
     private Integer lifetimeYears;   // Cat.11 전용 (nullable)
 
+    private UUID correctionOf;       // 정정 원본 ID (null = 최초 등록)
+    private String correctionReason; // 정정 사유 (null = 최초 등록)
+
     @Column(nullable = false)
     private String status;
 
@@ -72,7 +75,8 @@ public class ActivityDataJpaEntity {
                                   BigDecimal quantity, String unit, String countryCode,
                                   BigDecimal standardValue, String standardUnit,
                                   String dataSource, String dataQuality,
-                                  Integer lifetimeYears) {
+                                  Integer lifetimeYears,
+                                  UUID correctionOf, String correctionReason) {
         this.id = id != null ? id : UUID.randomUUID();
         this.tenantId = tenantId;
         this.entityId = entityId;
@@ -87,12 +91,22 @@ public class ActivityDataJpaEntity {
         this.dataSource = dataSource != null ? dataSource : "MANUAL";
         this.dataQuality = dataQuality != null ? dataQuality : "AVERAGE_DATA";
         this.lifetimeYears = lifetimeYears;
+        this.correctionOf = correctionOf;
+        this.correctionReason = correctionReason;
         this.status = "DRAFT";
         this.createdAt = Instant.now();
         this.updatedAt = Instant.now();
     }
 
     // 상태 전이 메서드 — setStatus() 직접 호출 금지 (01-domain-architecture.md)
+
+    /** ARCHIVED 상태 전이 — 정정된 원본 레코드 표식 (P1: INSERT-only 정정 패턴) */
+    public void archive() {
+        if ("ARCHIVED".equals(this.status)) throw new IllegalStateException("이미 보관된 데이터입니다");
+        this.status = "ARCHIVED";
+        this.updatedAt = Instant.now();
+    }
+
     public void submit(UUID actorId) {
         if (!"DRAFT".equals(this.status)) throw new IllegalStateException("DRAFT 상태만 제출 가능");
         this.status = "PENDING";

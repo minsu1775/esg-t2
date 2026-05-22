@@ -22,6 +22,8 @@ public final class ActivityDataMapper {
             .standardValue(domain.standardValue())
             .standardUnit(domain.standardUnit())
             .lifetimeYears(domain.lifetimeYears())
+            .correctionOf(domain.correctionOf())
+            .correctionReason(domain.correctionReason())
             .build();
     }
 }
