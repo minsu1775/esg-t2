@@ -19,6 +19,7 @@ import ai.claudecode.esgt2.vw.infra.VerificationSnapshotJpaEntity;
 import ai.claudecode.esgt2.vw.infra.VerificationSnapshotRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -35,11 +36,14 @@ import java.util.UUID;
 @RequiredArgsConstructor
 class DefaultSnapshotService implements SnapshotService {
 
+    /** 스냅샷 JSON 직렬화 전용 ObjectMapper — 빈 주입 없이 정적 인스턴스 사용 */
+    private static final ObjectMapper SNAPSHOT_MAPPER = new ObjectMapper()
+        .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
     private final ReportService reportService;
     private final VerificationSnapshotRepository snapshotRepository;
     private final VerificationCommentRepository commentRepository;
     private final VerificationSignatureRepository signatureRepository;
-    private final ObjectMapper objectMapper;
 
     // ──────────────────────────────────────────────
     // T-8-07: 스냅샷 생성 (APPROVED 보고서만)
@@ -181,7 +185,7 @@ class DefaultSnapshotService implements SnapshotService {
             ? report.approvedAt().toString() : null);
 
         try {
-            return objectMapper.writeValueAsString(payload);
+            return SNAPSHOT_MAPPER.writeValueAsString(payload);
         } catch (JsonProcessingException e) {
             throw new EsgException(EsgErrorCode.INTERNAL_ERROR,
                 "스냅샷 JSON 직렬화 실패: " + e.getMessage());

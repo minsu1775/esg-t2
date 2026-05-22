@@ -329,16 +329,16 @@
 
 | ID | 태스크 | 상태 | 비고 |
 |---|---|---|---|
-| T-8-01 | V13__verification_tables.sql | TODO | verification_snapshots, verification_comments |
-| T-8-02 | PostgreSQL 트리거: 스냅샷 UPDATE/DELETE 차단 | TODO | |
-| T-8-03 | `test:` 스냅샷 생성 후 원본 수정 → 스냅샷 불변 확인 | TODO | |
-| T-8-04 | `test:` VERIFIER → 지정 스냅샷 외 접근 → 403 | TODO | |
-| T-8-05 | `test:` 미승인 보고서 → 스냅샷 생성 시도 → 예외 | TODO | |
-| T-8-06 | `feat:` VerificationSnapshot 도메인 (SHA-256 해시) | TODO | |
-| T-8-07 | `feat:` 스냅샷 생성 API (POST /api/v1/vw/snapshots) | TODO | APPROVED 보고서만 |
-| T-8-08 | `feat:` VERIFIER RLS 정책 (지정 snapshot_id만) | TODO | |
-| T-8-09 | `feat:` 코멘트 CRUD (POST /api/v1/vw/snapshots/{id}/comments) | TODO | @Auditable |
-| T-8-10 | `feat:` 검증 완료 서명 (POST /api/v1/vw/snapshots/{id}/sign) | TODO | @Auditable |
+| T-8-01 | V23__verification_tables.sql | DONE | verification_snapshots, verification_comments, verification_signatures |
+| T-8-02 | PostgreSQL 트리거: 스냅샷 UPDATE/DELETE 차단 | DONE | migration-pg/V23 BEFORE 트리거 + REVOKE |
+| T-8-03 | `test:` 스냅샷 불변성 확인 (append-only Repository + hash 검증) | DONE | |
+| T-8-04 | `test:` VERIFIER → 지정 스냅샷 외 접근 → AccessDeniedException | DONE | SnapshotSecurityService SpEL |
+| T-8-05 | `test:` 미승인 보고서 → 스냅샷 생성 시도 → EsgException | DONE | |
+| T-8-06 | `feat:` VerificationSnapshot 도메인 (SHA-256 해시) | DONE | VerificationComment·Signature 포함 |
+| T-8-07 | `feat:` 스냅샷 생성 API (POST /api/v1/vw/snapshots) | DONE | APPROVED 보고서만 |
+| T-8-08 | `feat:` VERIFIER RLS 정책 (지정 snapshot_id만) | DONE | JWT→Interceptor→PG RLS 3계층 |
+| T-8-09 | `feat:` 코멘트 CRUD (POST /api/v1/vw/snapshots/{id}/comments) | DONE | @Auditable |
+| T-8-10 | `feat:` 검증 완료 서명 (POST /api/v1/vw/snapshots/{id}/sign) | DONE | @Auditable |
 
 ---
 
