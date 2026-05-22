@@ -468,6 +468,32 @@ _Phase 완료 후 내용 추가 예정_
 
 ---
 
+## Phase 6-B: 정정·재공시 워크플로우 & Formula DSL 배포
+
+### L-P6B-01: `@EventListener` + `@Transactional(REQUIRED)` 조합에서 내부 예외가 부모 트랜잭션을 오염시킨다
+
+**발견 경위**: `correctActivityData()`에서 `ActivityDataCorrectedEvent`를 발행 → `onActivityDataCorrected()`가 같은 트랜잭션에서 실행 → `EmissionFactorResolver.resolveAt()`의 `@Transactional(readOnly=true)` 메서드가 `EsgException`을 던지면 부모 트랜잭션이 **rollback-only**로 마킹 → `try/catch`로 잡아도 `UnexpectedRollbackException` 발생.
+
+**핵심 원칙**: Spring `@Transactional` 프록시는 RuntimeException 발생 시 즉시 트랜잭션을 rollback-only로 마킹한다. 이는 예외가 호출자 코드에서 catch되기 **이전에** 발생한다. 결과적으로 catch 블록이 있어도 트랜잭션은 이미 롤백 상태가 된다.
+
+**올바른 패턴**: "커밋 후 트리거" 작업에는 `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)` + `@Transactional(propagation = REQUIRES_NEW)` 조합을 사용한다. 이렇게 하면 원본 트랜잭션이 먼저 커밋되고, 후속 작업은 독립 트랜잭션에서 실행된다.
+
+**esg-t2 적용**: `ActivityDataEventHandler.onActivityDataCorrected()`을 `AFTER_COMMIT + REQUIRES_NEW`으로 변경. 배출계수 미존재 시 경고 로그만 남기고, 정정 자체는 항상 성공.
+
+---
+
+### L-P6B-02: Spring Modulith 모듈 간 이벤트 공유 — `@NamedInterface` 누락 시 즉시 ModularityTest 위반
+
+**발견 경위**: `shared.event.ActivityDataCorrectedEvent`를 `ghg` 모듈에서 참조했으나 `shared.event` 패키지에 `@NamedInterface` 없음 → ModularityTest "depends on non-exposed type" 위반.
+
+**핵심 원칙**: Spring Modulith에서 모듈의 서브패키지는 기본적으로 내부(non-exposed) 타입으로 취급된다. 다른 모듈에서 접근 가능하려면 `package-info.java`에 `@NamedInterface` 선언이 필요하다.
+
+**esg-t2 적용**: `shared/event/package-info.java`에 `@NamedInterface("events")` 추가. `shared/exception/` 의 `@NamedInterface("exceptions")` 패턴을 일관되게 적용.
+
+**재발 방지**: 새 `shared` 서브패키지 생성 시 반드시 `package-info.java` + `@NamedInterface` 세트를 함께 생성한다.
+
+---
+
 ## Phase 7: 공시 보고서 생성
 
 _Phase 완료 후 내용 추가 예정_

@@ -293,15 +293,15 @@
 
 | ID | 태스크 | 상태 | 비고 |
 |---|---|---|---|
-| T-6B-01 | `test:` 활동 데이터 정정 → 새 버전 INSERT, 원본 불변 확인 | TODO | |
-| T-6B-02 | `test:` 정정 사유 코드 누락 → 예외 | TODO | |
-| T-6B-03 | `feat:` POST /api/v1/ghg/activity-data/{id}/correct @Auditable | TODO | |
-| T-6B-04 | `feat:` 정정 이벤트 → 배출량 재산출 자동 트리거 | TODO | |
-| T-6B-05 | `feat:` GET /api/v1/ghg/activity-data/{id}/versions | TODO | 버전 이력 |
-| T-6B-06 | `feat:` 정정 전·후 수치 비교 API (/diff) | TODO | |
-| T-6B-07 | `test:` Formula YAML test_cases 실패 → 활성화 차단 | TODO | |
-| T-6B-08 | `feat:` Formula 버전 관리 (활성/비활성) | TODO | |
-| T-6B-09 | `feat:` 산식 변경 → 영향받는 배출량 목록 조회 API | TODO | |
+| T-6B-01 | `test:` 활동 데이터 정정 → 새 버전 INSERT, 원본 불변 확인 | DONE | CorrectionIntegrationTest |
+| T-6B-02 | `test:` 정정 사유 코드 누락 → 예외 | DONE | ActivityDataCorrectionDomainTest |
+| T-6B-03 | `feat:` POST /api/v1/ghg/activity-data/{id}/correct @Auditable | DONE | GhgController + DefaultGhgService |
+| T-6B-04 | `feat:` 정정 이벤트 → 배출량 재산출 자동 트리거 | DONE | ActivityDataEventHandler (AFTER_COMMIT) |
+| T-6B-05 | `feat:` GET /api/v1/ghg/activity-data/{id}/versions | DONE | 버전 이력 |
+| T-6B-06 | `feat:` 정정 전·후 수치 비교 API (/diff) | DONE | |
+| T-6B-07 | `test:` Formula YAML test_cases 실패 → 활성화 차단 | DONE | FormulaVersionDomainTest |
+| T-6B-08 | `feat:` Formula 버전 관리 (활성/비활성) | DONE | DefaultFormulaVersionService |
+| T-6B-09 | `feat:` 산식 변경 → 영향받는 배출량 목록 조회 API | DONE | FormulaImpactResponse |
 
 ---
 

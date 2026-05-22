@@ -180,6 +180,28 @@ _버그 발생 시 추가 예정_
 
 ---
 
+## Phase 6-B: 정정·재공시 워크플로우 & Formula DSL 배포
+
+### BUG-P6B-04 [P1 · FIXED] `UnexpectedRollbackException` — 이벤트 핸들러 내 배출계수 조회 실패 시 정정 트랜잭션 롤백
+
+- **발견 Phase**: Phase 6-B (2026-05-22)
+- **심각도**: HIGH
+- **증상**: `correctActivityData()` 호출 시 배출계수가 없는 경우 `UnexpectedRollbackException` 발생 — 정정 자체가 실패함.
+- **원인**: `@EventListener` + `@Transactional(REQUIRED)`로 구현된 `ActivityDataEventHandler.onActivityDataCorrected()`는 `correctActivityData()`의 트랜잭션에 참여. `EmissionFactorResolver.resolveAt()`에 `@Transactional(readOnly=true)`가 있어 `EsgException` 발생 시 현재 트랜잭션을 rollback-only로 마킹 → 예외를 catch해도 트랜잭션은 이미 롤백 상태.
+- **해결**: `@EventListener` → `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)` + `@Transactional(propagation = REQUIRES_NEW)`로 변경. 정정 트랜잭션 커밋 이후 독립 트랜잭션에서 재산출 실행 → 재산출 실패가 정정 성공에 영향 없음.
+- **재발 방지**: Spring `@EventListener`에서 다른 `@Transactional` 메서드를 호출할 때 RuntimeException이 발생하면 부모 트랜잭션이 rollback-only로 마킹됨. "커밋 후 트리거" 패턴은 `@TransactionalEventListener(AFTER_COMMIT)` + `REQUIRES_NEW` 조합을 사용한다.
+
+### BUG-P6B-05 [P2 · FIXED] `shared.event` 패키지 `@NamedInterface` 누락 — ModularityTest 위반
+
+- **발견 Phase**: Phase 6-B (2026-05-22)
+- **심각도**: MEDIUM
+- **증상**: `ModularityTest` 실패 — "Module 'ghg' depends on non-exposed type ActivityDataCorrectedEvent within module 'shared'".
+- **원인**: `shared.event` 패키지에 `package-info.java`와 `@NamedInterface` 선언 없음 → Spring Modulith가 해당 패키지를 다른 모듈에 공개되지 않은 내부 타입으로 취급.
+- **해결**: `shared/event/package-info.java` 생성: `@org.springframework.modulith.NamedInterface("events")`.
+- **재발 방지**: `shared` 모듈의 서브패키지를 다른 모듈에서 사용할 경우 반드시 `package-info.java`에 `@NamedInterface` 선언. 기존 `shared.exception`(`@NamedInterface("exceptions")`)과 동일한 패턴.
+
+---
+
 ## Phase 7: 공시 보고서 생성
 
 _버그 발생 시 추가 예정_
